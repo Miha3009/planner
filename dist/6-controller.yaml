@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: planner-deployment
+  namespace: planner-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: planner-controller
+  template:
+    metadata:
+      labels:
+        app: planner-controller
+    spec:
+      containers:
+        - name: planner-controller
+          image: miha3009/planner:v0.0.1
+          imagePullPolicy: Always
+      serviceAccountName: planner-svc
