@@ -1,6 +1,0 @@
-apiVersion: apps.hse.ru/v1
-kind: Planner
-metadata:
-  name: planner-sample
-spec:
-
