@@ -18,40 +18,60 @@ package controllers
 
 import (
 	"context"
+	"time"
 
+	appsv1 "github.com/miha3009/planner/api/v1"
+	"github.com/go-logr/logr"
+	"github.com/prometheus/common/log"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	appsv1 "github.com/miha3009/planner/api/v1"
 )
 
 // PlannerReconciler reconciles a Planner object
 type PlannerReconciler struct {
-	client.Client
+	Client client.Client
+	Log    logr.Logger
 	Scheme *runtime.Scheme
 }
 
 //+kubebuilder:rbac:groups=apps.hse.ru,resources=planners,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=apps.hse.ru,resources=planners/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=apps.hse.ru,resources=planners/finalizers,verbs=update
+//+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the Planner object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.0/pkg/reconcile
 func (r *PlannerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
-
-	// TODO(user): your logic here
-
-	return ctrl.Result{}, nil
+	_ = r.Log.WithValues("planner", req.NamespacedName)
+	
+	log.Info("LOG PODS")
+	podList := &corev1.PodList{}
+    	opts := []client.ListOption{}
+    	
+	if err := r.Client.List(ctx, podList, opts...); err != nil {
+		log.Error(err, "Failed to get pods")
+		return ctrl.Result{}, err
+	}
+	for _, pod := range podList.Items {
+		for _, container := range pod.Spec.Containers {
+			log.Info("Pod name: ", pod.Name, ", Requested cpu: ", container.Resources.Requests.Cpu(), ", Requested memory: ", container.Resources.Requests.Memory())
+		}
+	}
+	
+	log.Info("LOG NODES")
+	nodeList := &corev1.NodeList{}
+    	opts = []client.ListOption{}
+    	
+	if err := r.Client.List(ctx, nodeList, opts...); err != nil {
+		log.Error(err, "Failed to get nodes")
+		return ctrl.Result{}, err
+	}
+	for _, node := range nodeList.Items {
+		log.Info("Node name: ", node.Name, ", Capacity cpu: ", node.Status.Capacity.Cpu(), ", Capacity memory: ", node.Status.Capacity.Memory())
+	}
+	
+	return ctrl.Result{RequeueAfter: time.Second*5}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -60,3 +80,4 @@ func (r *PlannerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&appsv1.Planner{}).
 		Complete(r)
 }
+

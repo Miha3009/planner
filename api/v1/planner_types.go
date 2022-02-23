@@ -20,22 +20,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // PlannerSpec defines the desired state of Planner
 type PlannerSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of Planner. Edit planner_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
 }
 
 // PlannerStatus defines the observed state of Planner
 type PlannerStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
 }
 
 //+kubebuilder:object:root=true
@@ -52,7 +42,7 @@ type Planner struct {
 
 //+kubebuilder:object:root=true
 
-// PlannerList contains a list of Planner
+// PlannerList contains a list of HelloApp
 type PlannerList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
