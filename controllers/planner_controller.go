@@ -24,9 +24,15 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/prometheus/common/log"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+//	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+//	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	
+	info "github.com/miha3009/planner/controllers/informer"
+	framework "github.com/miha3009/planner/controllers/framework"
 )
 
 // PlannerReconciler reconciles a Planner object
@@ -44,40 +50,60 @@ type PlannerReconciler struct {
 
 func (r *PlannerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = r.Log.WithValues("planner", req.NamespacedName)
-	
-	log.Info("LOG PODS")
-	podList := &corev1.PodList{}
-    	opts := []client.ListOption{}
-    	
-	if err := r.Client.List(ctx, podList, opts...); err != nil {
-		log.Error(err, "Failed to get pods")
+
+	planner, err := r.GetPlanner(ctx, req)
+	if err != nil {
+		log.Error(err, ". Failed to get Planner")
 		return ctrl.Result{}, err
 	}
-	for _, pod := range podList.Items {
-		for _, container := range pod.Spec.Containers {
-			log.Info("Pod name: ", pod.Name, ", Requested cpu: ", container.Resources.Requests.Cpu(), ", Requested memory: ", container.Resources.Requests.Memory())
-		}
+	if planner == nil {
+		return ctrl.Result{}, nil
 	}
-	
-	log.Info("LOG NODES")
-	nodeList := &corev1.NodeList{}
-    	opts = []client.ListOption{}
-    	
-	if err := r.Client.List(ctx, nodeList, opts...); err != nil {
-		log.Error(err, "Failed to get nodes")
+
+	nodes, err := info.GetNodes(r.Client, ctx)
+	if err != nil {
+		log.Error(err, ". Failed to get nodes")
 		return ctrl.Result{}, err
 	}
-	for _, node := range nodeList.Items {
-		log.Info("Node name: ", node.Name, ", Capacity cpu: ", node.Status.Capacity.Cpu(), ", Capacity memory: ", node.Status.Capacity.Memory())
-	}
+	log.Info("Found ", len(nodes), " nodes.");
 	
-	return ctrl.Result{RequeueAfter: time.Second*5}, nil
+	pods, err := info.GetPods(planner, nodes, r.Client, ctx)
+	if err != nil {
+		log.Error(err, ". Failed to get pods")
+		return ctrl.Result{}, err
+	}
+	log.Info("Found ", len(pods), " pods.");
+	
+	plan := framework.GenPlan(nodes, pods)
+	log.Info("Plan length: ", len(plan))
+
+
+	return ctrl.Result{RequeueAfter: time.Second*time.Duration(planner.Spec.Delay)}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *PlannerReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &corev1.Pod{}, "spec.nodeName", func(rawObj client.Object) []string {
+		pod := rawObj.(*corev1.Pod)
+		return []string{pod.Spec.NodeName}
+	}); err != nil {
+		return err
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&appsv1.Planner{}).
 		Complete(r)
+}
+
+func (r *PlannerReconciler) GetPlanner(ctx context.Context, req ctrl.Request) (*appsv1.Planner, error) {
+	planner := &appsv1.Planner{}
+	if err := r.Client.Get(ctx, req.NamespacedName, planner); err != nil {
+		if errors.IsNotFound(err) {
+			log.Info("Planner resource not found. Ignoring since object must be deleted")
+			return nil, nil
+		}
+		return nil, err
+	}
+	return planner, nil
 }
 

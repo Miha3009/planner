@@ -22,6 +22,12 @@ import (
 
 // PlannerSpec defines the desired state of Planner
 type PlannerSpec struct {
+
+	Namespaces []string `json:"namespaces,omitempty"`
+	
+	
+	// +kubebuilder:validation:Minimum=1
+	Delay int `json:"delay,omitempty"`
 }
 
 // PlannerStatus defines the observed state of Planner

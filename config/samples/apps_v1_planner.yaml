@@ -3,4 +3,5 @@ kind: Planner
 metadata:
   name: planner-sample
 spec:
-
+  delay: 10
+  namespaces: ["default", "planner-system"]
