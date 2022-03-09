@@ -44,12 +44,12 @@ type ConstraintArgsList struct {
 
 type UniformArgs struct {
 	// +kubebuilder:validation:Minimum=0
-	Weight float64 `json:"weight"`
+	Weight int `json:"weight"`
 }
 
 type MaximizeInequalityArgs struct {
 	// +kubebuilder:validation:Minimum=0
-	Weight float64 `json:"weight"`
+	Weight int `json:"weight"`
 }
 
 type PreferenceArgsList struct {

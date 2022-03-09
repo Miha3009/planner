@@ -21,6 +21,7 @@ import (
 	types "github.com/miha3009/planner/controllers/types"
 	base "github.com/miha3009/planner/controllers/constraints/base"
 	resourcerange "github.com/miha3009/planner/controllers/constraints/resourcerange"
+	"github.com/prometheus/common/log"
 )
 
 type ConstraintList struct {
@@ -32,7 +33,11 @@ func ConvertArgs(cst *appsv1.ConstraintArgsList) ConstraintList {
 	cl[0] = base.Base{}
 	
 	if cst.ResourceRange != nil {
-		cl = append(cl, resourcerange.ResourceRange{Args: *cst.ResourceRange})
+		if resourcerange.Validate(cst.ResourceRange) {
+			cl = append(cl, resourcerange.ResourceRange{Args: *cst.ResourceRange})
+		} else {
+			log.Info("Constraint 'resource range' has wrong args")
+		}
 	}
 	
 	return ConstraintList{Items: cl}

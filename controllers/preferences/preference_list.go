@@ -34,17 +34,21 @@ func ConvertArgs(prf *appsv1.PreferenceArgsList) PreferenceList {
 	
 	if prf.Uniform != nil {
 		items = append(items, uniform.Uniform{})
-		weights = append(weights, prf.Uniform.Weight)
+		weights = append(weights, float64(prf.Uniform.Weight))
 	}
 
 	if prf.MaximizeInequality != nil {
 		items = append(items, maximizeinequality.MaximizeInequality{})
-		weights = append(weights, prf.MaximizeInequality.Weight)
+		weights = append(weights, float64(prf.MaximizeInequality.Weight))
 	}
 	
 	weightSum := float64(0)
 	for _, weight := range weights {
 		weightSum += weight
+	}
+	
+	if weightSum < 0.1 {
+		return PreferenceList{}
 	}
 	
 	for i := range weights {

@@ -45,22 +45,22 @@ spec:
                       maxCpu:
                         format: int64
                         maximum: 100
-                        minimum: 1
+                        minimum: 0
                         type: integer
                       maxMemory:
                         format: int64
                         maximum: 100
-                        minimum: 1
+                        minimum: 0
                         type: integer
                       minCpu:
                         format: int64
                         maximum: 100
-                        minimum: 1
+                        minimum: 0
                         type: integer
                       minMemory:
                         format: int64
                         maximum: 100
-                        minimum: 1
+                        minimum: 0
                         type: integer
                     type: object
                 type: object
@@ -71,6 +71,25 @@ spec:
                 items:
                   type: string
                 type: array
+              preferences:
+                properties:
+                  maximize_inequality:
+                    properties:
+                      weight:
+                        minimum: 0
+                        type: integer
+                    required:
+                    - weight
+                    type: object
+                  uniform:
+                    properties:
+                      weight:
+                        minimum: 0
+                        type: integer
+                    required:
+                    - weight
+                    type: object
+                type: object
             required:
             - active
             type: object

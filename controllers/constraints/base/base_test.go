@@ -17,16 +17,25 @@ limitations under the License.
 package base
 
 import (
-	types "github.com/miha3009/planner/controllers/types"
-	helper "github.com/miha3009/planner/controllers/helper"
+	"testing"
+	
+	"net/http"
+	"io/ioutil"
 )
 
-type Base struct {}
+func TestGood (t *testing.T) {
+	resp, err := http.Get("https://192.168.49.2:8443/api/v1/pods")
+	if err != nil {
+		t.Log(err)
+		return
+	}
 
-func (r Base) Apply(node *types.NodeInfo) bool {
-	cpuSum := node.MaxCpu - node.AvalibleCpu + helper.CalcPodsCpu(node)
-	memorySum := node.MaxMemory - node.AvalibleMemory + helper.CalcPodsMemory(node)
-		
-	return cpuSum <= node.MaxCpu &&
-	       memorySum >= node.MaxMemory
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	t.Log(string(body))
 }
+
+

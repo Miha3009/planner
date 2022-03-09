@@ -19,21 +19,21 @@ package resourcerange
 import (
 	appsv1 "github.com/miha3009/planner/api/v1"
 	types "github.com/miha3009/planner/controllers/types"
+	helper "github.com/miha3009/planner/controllers/helper"
 )
 
 type ResourceRange struct {
 	Args appsv1.ResourceRangeArgs
 }
 
+func Validate(args *appsv1.ResourceRangeArgs) bool {
+	return args.MinCpu <= args.MaxCpu && args.MinMemory <= args.MaxMemory 
+}
+
 func (r ResourceRange) Apply(node *types.NodeInfo) bool {
-	cpuSum := node.MaxCpu - node.AvalibleCpu
-	memorySum := node.MaxMemory - node.AvalibleMemory
-	
-	for _, pod := range node.Pods {
-		cpuSum += pod.Cpu
-		memorySum += pod.Memory
-	}
-	
+	cpuSum := node.MaxCpu - node.AvalibleCpu + helper.CalcPodsCpu(node)
+	memorySum := node.MaxMemory - node.AvalibleMemory + helper.CalcPodsMemory(node)
+		
 	return cpuSum >= node.MaxCpu * r.Args.MinCpu / 100 &&
 	       memorySum >= node.MaxMemory * r.Args.MinMemory / 100 &&
 	       cpuSum <= node.MaxCpu * r.Args.MaxCpu / 100 &&

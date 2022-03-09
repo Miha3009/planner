@@ -12,3 +12,6 @@ spec:
       maxCpu: 70
       minMemory: 1
       maxMemory: 70
+  preferences:
+    uniform:
+      weight: 1
