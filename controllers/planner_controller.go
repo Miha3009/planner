@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"time"
+	"math/rand"
 
 	appsv1 "github.com/miha3009/planner/api/v1"
 	"github.com/go-logr/logr"
@@ -32,8 +33,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	
 	info "github.com/miha3009/planner/controllers/informer"
-	framework "github.com/miha3009/planner/controllers/framework"
+	rescheduler "github.com/miha3009/planner/controllers/rescheduler"
+	workload "github.com/miha3009/planner/controllers/workload"
+	executor "github.com/miha3009/planner/controllers/executor"
 )
+
 
 // PlannerReconciler reconciles a Planner object
 type PlannerReconciler struct {
@@ -50,33 +54,43 @@ type PlannerReconciler struct {
 
 func (r *PlannerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = r.Log.WithValues("planner", req.NamespacedName)
+	rand.Seed(time.Now().UnixNano())
+	restart := ctrl.Result{RequeueAfter: time.Second*5}
 
 	planner, err := r.GetPlanner(ctx, req)
 	if err != nil {
 		log.Error(err, ". Failed to get Planner")
-		return ctrl.Result{}, err
+		return restart, err
 	}
-	if planner == nil {
-		return ctrl.Result{}, nil
+	
+	if planner == nil || !planner.Spec.Active {
+		return restart, nil
 	}
-
+	
 	nodes, err := info.GetNodes(r.Client, ctx)
 	if err != nil {
 		log.Error(err, ". Failed to get nodes")
-		return ctrl.Result{}, err
+		return restart, err
 	}
-	log.Info("Found ", len(nodes), " nodes.");
-	
+	log.Info("Found ", len(nodes), " nodes")
+
 	pods, err := info.GetPods(planner, nodes, r.Client, ctx)
 	if err != nil {
 		log.Error(err, ". Failed to get pods")
-		return ctrl.Result{}, err
+		return restart, err
 	}
-	log.Info("Found ", len(pods), " pods.");
-	
-	plan := framework.GenPlan(nodes, pods)
-	log.Info("Plan length: ", len(plan))
+	log.Info("Found ", len(pods), " pods")
 
+	workload.UpdatePodResources(pods)
+
+	plan := rescheduler.GenPlan(planner.Spec.Constraints, planner.Spec.Preferences, nodes, pods)
+	log.Info("Plan length: ", len(plan.Movements))
+
+	err = executor.ExecutePlan(plan)
+	if err != nil {
+		log.Error(err, "Failed to execute plan");
+		return restart, err
+	}
 
 	return ctrl.Result{RequeueAfter: time.Second*time.Duration(planner.Spec.Delay)}, nil
 }

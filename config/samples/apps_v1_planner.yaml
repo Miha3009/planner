@@ -3,5 +3,12 @@ kind: Planner
 metadata:
   name: planner-sample
 spec:
+  active: true
   delay: 10
   namespaces: ["default", "planner-system"]
+  constraints:
+    resource_range:
+      minCpu: 5
+      maxCpu: 70
+      minMemory: 1
+      maxMemory: 70

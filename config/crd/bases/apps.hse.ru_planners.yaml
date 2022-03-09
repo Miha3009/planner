@@ -36,6 +36,34 @@ spec:
           spec:
             description: PlannerSpec defines the desired state of Planner
             properties:
+              active:
+                type: boolean
+              constraints:
+                properties:
+                  resource_range:
+                    properties:
+                      maxCpu:
+                        format: int64
+                        maximum: 100
+                        minimum: 1
+                        type: integer
+                      maxMemory:
+                        format: int64
+                        maximum: 100
+                        minimum: 1
+                        type: integer
+                      minCpu:
+                        format: int64
+                        maximum: 100
+                        minimum: 1
+                        type: integer
+                      minMemory:
+                        format: int64
+                        maximum: 100
+                        minimum: 1
+                        type: integer
+                    type: object
+                type: object
               delay:
                 minimum: 1
                 type: integer
@@ -43,6 +71,8 @@ spec:
                 items:
                   type: string
                 type: array
+            required:
+            - active
             type: object
           status:
             description: PlannerStatus defines the observed state of Planner

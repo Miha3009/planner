@@ -20,14 +20,57 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type ResourceRangeArgs struct {
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	MinCpu int64 `json:"minCpu,omitempty"`
+
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	MaxCpu int64 `json:"maxCpu,omitempty"`
+
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	MinMemory int64 `json:"minMemory,omitempty"`
+
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	MaxMemory int64 `json:"maxMemory,omitempty"`
+}
+
+type ConstraintArgsList struct {
+	ResourceRange *ResourceRangeArgs `json:"resource_range,omitempty"`
+}
+
+type UniformArgs struct {
+	// +kubebuilder:validation:Minimum=0
+	Weight float64 `json:"weight"`
+}
+
+type MaximizeInequalityArgs struct {
+	// +kubebuilder:validation:Minimum=0
+	Weight float64 `json:"weight"`
+}
+
+type PreferenceArgsList struct {
+	Uniform *UniformArgs `json:"uniform,omitempty"`
+	MaximizeInequality *MaximizeInequalityArgs `json:"maximize_inequality,omitempty"`
+}
+
 // PlannerSpec defines the desired state of Planner
 type PlannerSpec struct {
+
+	Active bool `json:"active"`
 
 	Namespaces []string `json:"namespaces,omitempty"`
 	
 	
 	// +kubebuilder:validation:Minimum=1
 	Delay int `json:"delay,omitempty"`
+	
+	Constraints ConstraintArgsList `json:"constraints,omitempty"`
+	
+	Preferences PreferenceArgsList `json:"preferences,omitempty"`
 }
 
 // PlannerStatus defines the observed state of Planner

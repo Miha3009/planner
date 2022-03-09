@@ -14,22 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package framework
+package constraints
 
 import (
-	"testing"
-	
-	framework "github.com/miha3009/planner/controllers/framework"
+	types "github.com/miha3009/planner/controllers/types"
 )
 
-func TestExample(t *testing.T) {
-	node := framework.NodeInfo {
-		"x", 5, 0, 0, 0, 
-		[]framework.PodInfo {{"x", 4, 0}},
-	}
-
-	if !framework.CheckLimits(node) {
-		t.FailNow()
-		return
-	}
+type Constraint interface {
+	Apply(node *types.NodeInfo) bool
 }
