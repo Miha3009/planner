@@ -19,8 +19,8 @@ package constraints
 import (
 	appsv1 "github.com/miha3009/planner/api/v1"
 	types "github.com/miha3009/planner/controllers/types"
-	base "github.com/miha3009/planner/controllers/constraints/base"
-	resourcerange "github.com/miha3009/planner/controllers/constraints/resourcerange"
+	base "github.com/miha3009/planner/controllers/rescheduler/constraints/base"
+	resourcerange "github.com/miha3009/planner/controllers/rescheduler/constraints/resourcerange"
 	"github.com/prometheus/common/log"
 )
 

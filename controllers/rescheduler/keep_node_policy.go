@@ -17,12 +17,13 @@ limitations under the License.
 package rescheduler
 
 import (
+	"context"
 	types "github.com/miha3009/planner/controllers/types"
 )
 
 type KeepNodePolicy struct {}
 
-func (a *KeepNodePolicy) Run(algo Algorithm, nodes []types.NodeInfo) ([]types.NodeInfo, []types.NodeInfo, []types.NodeInfo) {
-	return algo.Run(nodes), []types.NodeInfo{}, []types.NodeInfo{}
+func (a *KeepNodePolicy) Run(ctx context.Context, algo Algorithm, nodes []types.NodeInfo) ([]types.NodeInfo, []types.NodeInfo, []types.NodeInfo) {
+	return algo.Run(ctx, nodes), []types.NodeInfo{}, []types.NodeInfo{}
 }
 

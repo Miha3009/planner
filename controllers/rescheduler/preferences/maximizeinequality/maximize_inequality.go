@@ -14,15 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package workload
+package maximizeinequality
 
 import (
-	corev1 "k8s.io/api/core/v1"
-	"github.com/prometheus/common/log"
+	types "github.com/miha3009/planner/controllers/types"
+	uniform "github.com/miha3009/planner/controllers/rescheduler/preferences/uniform"
 )
 
-func UpdatePodResources(pods [][]corev1.Pod) {
-	log.Info("Pods updated")
-	
-	return
+type MaximizeInequality struct {}
+
+func (r MaximizeInequality) Apply(nodes []types.NodeInfo) float64 {
+	u := uniform.Uniform{}
+	return 100 - u.Apply(nodes)
 }

@@ -14,16 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package maximizeinequality
+package resourceupdater
 
 import (
+	"context"
 	types "github.com/miha3009/planner/controllers/types"
-	uniform "github.com/miha3009/planner/controllers/preferences/uniform"
+	appsv1 "github.com/miha3009/planner/api/v1"
+	
+	"github.com/prometheus/common/log"
 )
 
-type MaximizeInequality struct {}
-
-func (r MaximizeInequality) Apply(nodes []types.NodeInfo) float64 {
-	u := uniform.Uniform{}
-	return 100 - u.Apply(nodes)
+func UpdatePodResources(ctx context.Context, events chan types.Event, cache *types.PlannerCache, planner appsv1.PlannerSpec) {
+	log.Info("Pods updated")
+	
+	events <- types.ResourceUpdatingEnded
+	return
 }

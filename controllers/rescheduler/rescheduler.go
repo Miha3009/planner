@@ -17,42 +17,57 @@ limitations under the License.
 package rescheduler
 
 import (
+	"context"
+
 	appsv1 "github.com/miha3009/planner/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	"github.com/prometheus/common/log"
 	resource "k8s.io/apimachinery/pkg/api/resource"
-	constraints "github.com/miha3009/planner/controllers/constraints"
-	preferences "github.com/miha3009/planner/controllers/preferences"
+	constraints "github.com/miha3009/planner/controllers/rescheduler/constraints"
+	preferences "github.com/miha3009/planner/controllers/rescheduler/preferences"
 	types "github.com/miha3009/planner/controllers/types"
+	helper "github.com/miha3009/planner/controllers/helper"
 )
 
 type Algorithm interface {
-	Run(nodes []types.NodeInfo) (updatedNodes []types.NodeInfo)
+	Run(ctx context.Context, nodes []types.NodeInfo) (updatedNodes []types.NodeInfo)
 }
 
 type NodePolicy interface {
-	Run(algo Algorithm, nodes []types.NodeInfo) (updatedNodes []types.NodeInfo, nodesToCreate []types.NodeInfo, nodesToDelete []types.NodeInfo)
+	Run(ctx context.Context, algo Algorithm, nodes []types.NodeInfo) (updatedNodes []types.NodeInfo, nodesToCreate []types.NodeInfo, nodesToDelete []types.NodeInfo)
 }
 
-func GenPlan(cst appsv1.ConstraintArgsList, prf appsv1.PreferenceArgsList, rawNodes []corev1.Node, rawPods [][]corev1.Pod) types.Plan {
-	log.Info("Plan generated")
-	nodes := convertNodes(rawNodes, rawPods)
+func GenPlan(ctx context.Context, events chan types.Event, cache *types.PlannerCache, planner appsv1.PlannerSpec) {
+	cst := planner.Constraints
+	prf := planner.Preferences
 	
+	rawNodes := cache.Nodes
+	rawPods := cache.Pods
+	
+	nodes := convertNodes(rawNodes, rawPods)
+
 	cl := constraints.ConvertArgs(&cst)
 	pl := preferences.ConvertArgs(&prf)
 	
-	algo := RandomAlgorithm{1000, cl, pl}
+	algo := RandomAlgorithm{100000000, cl, pl}
 	nodePolicy := KeepNodePolicy{}
-	updatedNodes, nodesToCreate, nodesToDelete := nodePolicy.Run(&algo, nodes)
+	updatedNodes, nodesToCreate, nodesToDelete := nodePolicy.Run(ctx, &algo, nodes)
+	if helper.ContextEnded(ctx) {
+		return
+	}
 	
 	movementsInfo := calcDiff(nodes, updatedNodes)
 	movements := convertMovement(movementsInfo, rawNodes, rawPods)
-	
-	return types.Plan{
+	plan := types.Plan{
 		Movements: movements,
 		NodesToCreate: genNodesFromInfo(nodesToCreate),
 		NodesToDelete: matchNodes(rawNodes, nodesToDelete),
 	}
+	
+	log.Info("Plan generated")
+	cache.Plan = plan
+	events <- types.PlanningEnded
+	return
 }
 
 func convertNodes(rawNodes []corev1.Node, rawPods [][]corev1.Pod) []types.NodeInfo {

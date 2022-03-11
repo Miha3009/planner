@@ -36,8 +36,6 @@ spec:
           spec:
             description: PlannerSpec defines the desired state of Planner
             properties:
-              active:
-                type: boolean
               constraints:
                 properties:
                   resource_range:
@@ -64,13 +62,13 @@ spec:
                         type: integer
                     type: object
                 type: object
-              delay:
-                minimum: 1
-                type: integer
               namespaces:
                 items:
                   type: string
                 type: array
+              planning_interval:
+                minimum: 1
+                type: integer
               preferences:
                 properties:
                   maximize_inequality:
@@ -90,11 +88,16 @@ spec:
                     - weight
                     type: object
                 type: object
-            required:
-            - active
             type: object
           status:
             description: PlannerStatus defines the observed state of Planner
+            properties:
+              active:
+                type: boolean
+              phase:
+                type: integer
+            required:
+            - active
             type: object
         type: object
     served: true

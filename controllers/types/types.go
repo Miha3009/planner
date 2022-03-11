@@ -18,6 +18,19 @@ package types
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	metrics "k8s.io/metrics/pkg/apis/metrics/v1beta1"
+)
+
+type Event int
+
+const (
+	Start Event = 0
+	Stop = 1
+	InformingEnded = 2
+	ResourceUpdatingEnded = 3
+	PlanningEnded = 4
+	ExecutingEnded = 5
+	PhaseEndedWithError = 6
 )
 
 type PodInfo struct {
@@ -51,5 +64,13 @@ type Plan struct {
 	Movements []Movement
 	NodesToDelete []corev1.Node
 	NodesToCreate []corev1.Node	
+}
+
+type PlannerCache struct {
+	Nodes []corev1.Node
+	Pods [][]corev1.Pod
+	NodeMetrics []metrics.NodeMetrics
+	PodMetrics [][]metrics.PodMetrics
+	Plan Plan
 }
 

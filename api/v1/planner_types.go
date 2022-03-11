@@ -60,21 +60,30 @@ type PreferenceArgsList struct {
 // PlannerSpec defines the desired state of Planner
 type PlannerSpec struct {
 
-	Active bool `json:"active"`
-
 	Namespaces []string `json:"namespaces,omitempty"`
 	
-	
 	// +kubebuilder:validation:Minimum=1
-	Delay int `json:"delay,omitempty"`
-	
+	PlanningInterval int `json:"planning_interval,omitempty"`
+
 	Constraints ConstraintArgsList `json:"constraints,omitempty"`
 	
 	Preferences PreferenceArgsList `json:"preferences,omitempty"`
 }
 
+type PlannerPhase int
+
+const (
+	Ready PlannerPhase = 0
+	Informing = 1
+	ResourcesUpdating = 2
+	Planning = 3
+	Executing = 4
+)
+
 // PlannerStatus defines the observed state of Planner
 type PlannerStatus struct {
+	Active bool `json:"active,default:true"`
+	Phase PlannerPhase `json:"phase,omitempty"`
 }
 
 //+kubebuilder:object:root=true

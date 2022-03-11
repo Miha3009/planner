@@ -3,8 +3,7 @@ kind: Planner
 metadata:
   name: planner-sample
 spec:
-  active: true
-  delay: 10
+  planning_interval: 10
   namespaces: ["default", "planner-system"]
   constraints:
     resource_range:
@@ -15,3 +14,4 @@ spec:
   preferences:
     uniform:
       weight: 1
+

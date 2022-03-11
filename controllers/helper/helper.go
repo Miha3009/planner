@@ -17,6 +17,8 @@ limitations under the License.
 package helper
 
 import (
+	"context"
+
 	types "github.com/miha3009/planner/controllers/types"
 )
 
@@ -54,3 +56,13 @@ func DeepCopyNodes(nodes []types.NodeInfo) []types.NodeInfo {
 	}
 	return copyNodes
 }
+
+func ContextEnded(ctx context.Context) bool {
+	select {
+		case <-ctx.Done():
+			return true
+		default:
+			return false
+	}
+}
+

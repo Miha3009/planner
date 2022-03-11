@@ -18,20 +18,73 @@ package informer
 
 import (
 	"context"
-
+	types "github.com/miha3009/planner/controllers/types"
 	appsv1 "github.com/miha3009/planner/api/v1"
+
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/prometheus/common/log"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	metrics "k8s.io/metrics/pkg/apis/metrics/v1beta1"
+	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
 )
 
-func GetPods(planner *appsv1.Planner, nodes []corev1.Node, clt client.Client, ctx context.Context) ([][]corev1.Pod, error) {	
+func GetInfo(ctx context.Context, events chan types.Event, cache *types.PlannerCache, clt client.Client, mclt *metricsv.Clientset, planner appsv1.PlannerSpec) {
+	nodes, err := getNodes(clt, ctx)
+	if err != nil {
+		log.Error(err, ". Failed to get nodes")
+		events <- types.PhaseEndedWithError
+		return
+	}
+	
+	pods, err := getPods(&planner, nodes, clt, ctx)
+	if err != nil {
+		log.Error(err, ". Failed to get pods")
+		events <- types.PhaseEndedWithError
+		return
+	}
+	
+	nodeMetrics, err := getNodeMetrics(mclt, ctx)
+	if err != nil {
+		log.Error(err, ". Failed to get node metrics")
+		events <- types.PhaseEndedWithError
+		return
+	}
+	
+	podMetrics, err := getPodMetrics(&planner, mclt, ctx)
+	if err != nil {
+		log.Error(err, ". Failed to get pod metrics")
+		events <- types.PhaseEndedWithError
+		return
+	}
+
+	cache.Nodes = nodes
+	cache.Pods = pods
+	cache.NodeMetrics = nodeMetrics
+	cache.PodMetrics = podMetrics
+
+	log.Info("Info collected")
+	events <- types.InformingEnded
+	return
+}
+
+func getNodes(clt client.Client, ctx context.Context) ([]corev1.Node, error) {	
+	nodeList := &corev1.NodeList{}
+	if err := clt.List(ctx, nodeList); err != nil {
+		return nil, err
+	}
+	
+	return nodeList.Items, nil
+}
+
+func getPods(planner *appsv1.PlannerSpec, nodes []corev1.Node, clt client.Client, ctx context.Context) ([][]corev1.Pod, error) {	
 	pods := make([][]corev1.Pod, len(nodes))
 	
 	for i := range nodes {
 		pods[i] = make([]corev1.Pod, 0)
 	}
 	
-	for _, namespace := range planner.Spec.Namespaces {
+	for _, namespace := range planner.Namespaces {
 		for i, node := range nodes {
 			podList := &corev1.PodList{}
 
@@ -52,12 +105,25 @@ func GetPods(planner *appsv1.Planner, nodes []corev1.Node, clt client.Client, ct
 	return pods, nil
 }
 
-func GetNodes(clt client.Client, ctx context.Context) ([]corev1.Node, error) {	
-	nodeList := &corev1.NodeList{}
-	if err := clt.List(ctx, nodeList); err != nil {
+func getNodeMetrics(mclt *metricsv.Clientset, ctx context.Context) ([]metrics.NodeMetrics, error) {
+	m, err := mclt.MetricsV1beta1().NodeMetricses().List(ctx, metav1.ListOptions{})
+	if err != nil {
 		return nil, err
 	}
-	
-	return nodeList.Items, nil
+	return m.Items, nil
+}
+
+func getPodMetrics(planner *appsv1.PlannerSpec, mclt *metricsv.Clientset, ctx context.Context) ([][]metrics.PodMetrics, error) {
+	podsMetrics := make([][]metrics.PodMetrics, len(planner.Namespaces))
+
+	for i, namespace := range planner.Namespaces {
+		if m, err := mclt.MetricsV1beta1().PodMetricses(namespace).List(ctx, metav1.ListOptions{}); err == nil {
+			podsMetrics[i] = m.Items
+		} else {
+			return podsMetrics, err
+		}
+	}
+
+	return podsMetrics, nil
 }
 

@@ -19,8 +19,8 @@ package preferences
 import (
 	appsv1 "github.com/miha3009/planner/api/v1"
 	types "github.com/miha3009/planner/controllers/types"
-	uniform "github.com/miha3009/planner/controllers/preferences/uniform"
-	maximizeinequality "github.com/miha3009/planner/controllers/preferences/maximizeinequality"
+	uniform "github.com/miha3009/planner/controllers/rescheduler/preferences/uniform"
+	maximizeinequality "github.com/miha3009/planner/controllers/rescheduler/preferences/maximizeinequality"
 )
 
 type PreferenceList struct {

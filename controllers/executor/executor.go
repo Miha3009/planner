@@ -17,12 +17,16 @@ limitations under the License.
 package executor
 
 import (
+	"context"
 	types "github.com/miha3009/planner/controllers/types"
+	appsv1 "github.com/miha3009/planner/api/v1"
+
 	"github.com/prometheus/common/log"
 )
 
-func ExecutePlan(plan types.Plan) error {
+func ExecutePlan(ctx context.Context, events chan types.Event, cache *types.PlannerCache, planner appsv1.PlannerSpec) {
 	log.Info("Plan executed")
 	
-	return nil
+	events <- types.ExecutingEnded
+	return
 }

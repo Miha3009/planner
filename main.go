@@ -18,6 +18,7 @@ package main
 
 import (
 	"os"
+	"time"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -27,9 +28,11 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
 
 	appsv1 "github.com/miha3009/planner/api/v1"
 	"github.com/miha3009/planner/controllers"
+	types "github.com/miha3009/planner/controllers/types"
 	"github.com/prometheus/common/log"
 	//+kubebuilder:scaffold:imports
 )
@@ -47,7 +50,8 @@ func init() {
 
 func main() {
 	log.Info("Creating the Manager.")
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+	config := ctrl.GetConfigOrDie()
+	mgr, err := ctrl.NewManager(config, ctrl.Options{
 		Scheme: scheme,
 	})
 	if err != nil {
@@ -55,15 +59,31 @@ func main() {
 		os.Exit(1)
 	}
 
+	clientset, err := metricsv.NewForConfig(config)
+	if err != nil {
+		log.Error(err, "Unable to get metrics client")
+		os.Exit(1)
+	}
+
 	log.Info("Starting the Controller.")
-	if err = (&controllers.PlannerReconciler{
+	events := make(chan types.Event, 10)
+	events <- types.Start
+	reconciler := &controllers.PlannerReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Planner"),
 		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+		Metrics: clientset,
+		Events: events,
+		Cache: types.PlannerCache{},
+		CancelFunc: nil,
+		LastStart: time.Time{},
+	}
+	if err = reconciler.SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", "Planner")
 		os.Exit(1)
 	}
+	
+	go controllers.RunServer(reconciler)
 
 	log.Info("Starting the Manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
@@ -71,3 +91,4 @@ func main() {
 		os.Exit(1)
 	}
 }
+

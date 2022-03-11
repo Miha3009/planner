@@ -17,9 +17,10 @@ limitations under the License.
 package rescheduler
 
 import (
+	"context"
         "math/rand"
-	constraints "github.com/miha3009/planner/controllers/constraints"
-	preferences "github.com/miha3009/planner/controllers/preferences"
+	constraints "github.com/miha3009/planner/controllers/rescheduler/constraints"
+	preferences "github.com/miha3009/planner/controllers/rescheduler/preferences"
 	types "github.com/miha3009/planner/controllers/types"
 	helper "github.com/miha3009/planner/controllers/helper"
 )
@@ -30,8 +31,8 @@ type RandomAlgorithm struct {
 	Preferences preferences.PreferenceList
 }
 
-func (a *RandomAlgorithm) Run(oldNodes []types.NodeInfo) []types.NodeInfo {
-	if len(oldNodes) == 0 {
+func (a *RandomAlgorithm) Run(ctx context.Context, oldNodes []types.NodeInfo) []types.NodeInfo {
+	if helper.ContextEnded(ctx) || len(oldNodes) == 0 {
 		return oldNodes
 	}
 
@@ -39,6 +40,10 @@ func (a *RandomAlgorithm) Run(oldNodes []types.NodeInfo) []types.NodeInfo {
 	nodes := helper.DeepCopyNodes(oldNodes)
 	
 	for j := 0; j <= a.Attempts; j++{
+		if helper.ContextEnded(ctx) {
+			return nodes
+		}
+	
 		oldNode := &nodes[rand.Intn(N)]
 		newNode := &nodes[rand.Intn(N)]
 
