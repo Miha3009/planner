@@ -72,10 +72,11 @@ func main() {
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Planner"),
 		Scheme: mgr.GetScheme(),
-		Metrics: clientset,
+		MetricsClient: clientset,
 		Events: events,
-		Cache: types.PlannerCache{},
-		CancelFunc: nil,
+		Cache: types.NewCache(),
+		MainProcess: nil,
+		MetricsProcess: nil,
 		LastStart: time.Time{},
 	}
 	if err = reconciler.SetupWithManager(mgr); err != nil {

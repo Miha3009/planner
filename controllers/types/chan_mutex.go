@@ -14,21 +14,35 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resourceupdater
+package types
 
 import (
-	"context"
-	types "github.com/miha3009/planner/controllers/types"
-	appsv1 "github.com/miha3009/planner/api/v1"
-	
-	"github.com/prometheus/common/log"
 )
 
-func UpdatePodResources(ctx context.Context, events chan types.Event, cache *types.PlannerCache, planner appsv1.PlannerSpec) {
-	log.Info("Pods updated")
-	cache.Metrics.Lock()
-	cache.Metrics.Unlock()
-	
-	events <- types.ResourceUpdatingEnded
-	return
+type ChanMutex struct {
+	lockChan chan struct{}
 }
+
+func NewChanMutex() *ChanMutex {
+	return &ChanMutex{
+		lockChan: make(chan struct{}, 1),
+	}
+}
+
+func (m *ChanMutex) Lock() {
+	m.lockChan <- struct{}{}
+}
+
+func (m *ChanMutex) Unlock() {
+	<-m.lockChan
+}
+
+func (m *ChanMutex) TryLock() bool {
+	select {
+	case m.lockChan <- struct{}{}:
+		return true
+	default:
+		return false
+	}
+}
+

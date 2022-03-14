@@ -5,6 +5,8 @@ metadata:
 spec:
   planning_interval: 10
   namespaces: ["default", "planner-system"]
+  metrics_max_age: 3600
+  metrics_fetch_period: 15
   constraints:
     resource_range:
       minCpu: 5

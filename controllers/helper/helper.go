@@ -18,6 +18,7 @@ package helper
 
 import (
 	"context"
+	"time"
 
 	types "github.com/miha3009/planner/controllers/types"
 )
@@ -64,5 +65,12 @@ func ContextEnded(ctx context.Context) bool {
 		default:
 			return false
 	}
+}
+
+func SleepWithContext(ctx context.Context, delay time.Duration) {
+    select {
+    	case <-ctx.Done():
+    	case <-time.After(delay):
+    }
 }
 

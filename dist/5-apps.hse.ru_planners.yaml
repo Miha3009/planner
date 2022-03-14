@@ -62,6 +62,12 @@ spec:
                         type: integer
                     type: object
                 type: object
+              metrics_fetch_period:
+                minimum: 1
+                type: integer
+              metrics_max_age:
+                minimum: 1
+                type: integer
               namespaces:
                 items:
                   type: string

@@ -17,6 +17,7 @@ limitations under the License.
 package types
 
 import (
+	"time"
 	corev1 "k8s.io/api/core/v1"
 	metrics "k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
@@ -66,11 +67,9 @@ type Plan struct {
 	NodesToCreate []corev1.Node	
 }
 
-type PlannerCache struct {
-	Nodes []corev1.Node
-	Pods [][]corev1.Pod
-	NodeMetrics []metrics.NodeMetrics
-	PodMetrics [][]metrics.PodMetrics
-	Plan Plan
+type MetricsPackage struct {
+	NodeMetrics map[string]metrics.NodeMetrics
+	PodMetrics map[string]metrics.PodMetrics
+	Timestamp time.Time
 }
 

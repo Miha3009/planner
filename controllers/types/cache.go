@@ -14,21 +14,31 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resourceupdater
+package types
 
 import (
-	"context"
-	types "github.com/miha3009/planner/controllers/types"
-	appsv1 "github.com/miha3009/planner/api/v1"
-	
-	"github.com/prometheus/common/log"
+	corev1 "k8s.io/api/core/v1"
 )
 
-func UpdatePodResources(ctx context.Context, events chan types.Event, cache *types.PlannerCache, planner appsv1.PlannerSpec) {
-	log.Info("Pods updated")
-	cache.Metrics.Lock()
-	cache.Metrics.Unlock()
-	
-	events <- types.ResourceUpdatingEnded
-	return
+type PlannerCache struct {
+	Nodes []corev1.Node
+	Pods [][]corev1.Pod
+	Metrics MetricsQueue
+	Plan *Plan
 }
+
+func NewCache() *PlannerCache {
+	return &PlannerCache{
+		Nodes: make([]corev1.Node, 0),
+		Pods: make([][]corev1.Pod, 0),
+		Metrics: NewMetricsQueue(),
+		Plan: nil,
+	}
+}
+
+func (cache *PlannerCache) Clear() {
+	cache.Nodes = make([]corev1.Node, 0)
+	cache.Pods = make([][]corev1.Pod, 0)
+	cache.Plan = nil
+}
+

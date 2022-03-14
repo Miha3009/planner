@@ -38,16 +38,21 @@ import (
 	executor "github.com/miha3009/planner/controllers/executor"
 )
 
+type Process struct {
+	Context context.Context
+	CancelFunc context.CancelFunc	
+}
+
 // PlannerReconciler reconciles a Planner object
 type PlannerReconciler struct {
 	Client client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
-	Metrics *metricsv.Clientset
+	MetricsClient *metricsv.Clientset
 	Events chan types.Event
-	Cache types.PlannerCache
-	Context context.Context
-	CancelFunc *context.CancelFunc
+	Cache *types.PlannerCache
+	MainProcess *Process
+	MetricsProcess *Process
 	LastStart time.Time
 }
 
@@ -82,16 +87,23 @@ func (r *PlannerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return restart, nil
 	}
 	
-	if r.CancelFunc == nil {
-		context, cancelFunc := context.WithCancel(ctx)
-		r.Context = context
-		r.CancelFunc = &cancelFunc		
+	if r.MainProcess == nil {
+		r.Events <- types.Start
+		return restart, nil
+	}
+	
+	if r.MetricsProcess == nil {
+		r.StartMetricsProcess(ctx, planner)
+	}
+	
+	if r.Cache != nil {
+		r.Cache.Metrics.SetMaxAge(time.Second*time.Duration(planner.Spec.MetrcisMaxAge))
 	}
 	
 	if planner.Status.Phase == appsv1.Ready {
 		nextStart := r.LastStart.Add(time.Second*time.Duration(planner.Spec.PlanningInterval))
 		if nextStart.Before(time.Now()) {
-			go informer.GetInfo(r.Context, r.Events, &r.Cache, r.Client, r.Metrics, planner.Spec)
+			go informer.GetInfo(r.MainProcess.Context, r.Events, r.Cache, r.Client, planner.Spec)
 			r.LastStart = time.Now()
 			planner.Status.Phase = appsv1.Informing
 			r.UpdatePlanner(ctx, planner)
@@ -130,12 +142,14 @@ func (r *PlannerReconciler) GetPlanner(ctx context.Context, req ctrl.Request) (*
 func (r *PlannerReconciler) ProcessEvent(ctx context.Context, planner *appsv1.Planner, e types.Event) bool {
 	switch e {
 		case types.Start:
-			if !planner.Status.Active || r.CancelFunc == nil {
+			if !planner.Status.Active || r.MainProcess == nil {
 				planner.Status.Active = true
 				planner.Status.Phase = appsv1.Ready
 				context, cancelFunc := context.WithCancel(ctx)
-				r.Context = context
-				r.CancelFunc = &cancelFunc
+				r.MainProcess = &Process {
+					Context: context,
+					CancelFunc: cancelFunc,
+				}
 				log.Info("Planner started")
 				return true
 			}
@@ -143,47 +157,56 @@ func (r *PlannerReconciler) ProcessEvent(ctx context.Context, planner *appsv1.Pl
 			if planner.Status.Active {
 				planner.Status.Active = false
 				planner.Status.Phase = appsv1.Ready
-				if r.CancelFunc != nil {
-					(*r.CancelFunc)()
-					r.CancelFunc = nil
+				if r.MainProcess != nil {
+					r.MainProcess.CancelFunc()
+					r.MainProcess = nil
 				}
-				r.ClearCache()
+				if r.MetricsProcess != nil {
+					r.MetricsProcess.CancelFunc()
+					r.MetricsProcess = nil
+				}
+				r.Cache.Clear()
 				log.Info("Planner stopped")
 				return true
 			}
 		case types.InformingEnded:
-			go resourceupdater.UpdatePodResources(r.Context, r.Events, &r.Cache, planner.Spec)
+			go resourceupdater.UpdatePodResources(r.MainProcess.Context, r.Events, r.Cache, planner.Spec)
 			planner.Status.Phase = appsv1.ResourcesUpdating
 			return true
 		case types.ResourceUpdatingEnded:
-			go rescheduler.GenPlan(r.Context, r.Events, &r.Cache, planner.Spec)
+			go rescheduler.GenPlan(r.MainProcess.Context, r.Events, r.Cache, planner.Spec)
 			planner.Status.Phase = appsv1.Planning
 			return true
 		case types.PlanningEnded:
-			go executor.ExecutePlan(r.Context, r.Events, &r.Cache, planner.Spec)
+			go executor.ExecutePlan(r.MainProcess.Context, r.Events, r.Cache, planner.Spec)
 			planner.Status.Phase = appsv1.Executing
 			return true
 		case types.ExecutingEnded:
 			planner.Status.Phase = appsv1.Ready
-			r.ClearCache()
+			r.Cache.Clear()
 			return true
 		case types.PhaseEndedWithError:
 			nextStart := r.LastStart.Add(time.Second*time.Duration(planner.Spec.PlanningInterval))
 			log.Info("Error. Planner will restart after ", nextStart)
 			planner.Status.Phase = appsv1.Ready
-			r.ClearCache()
+			r.Cache.Clear()
 			return true
 	}
 	return false
+}
+
+func (r *PlannerReconciler) StartMetricsProcess(ctx context.Context, planner *appsv1.Planner) {
+	context, cancelFunc := context.WithCancel(ctx)
+	r.MetricsProcess = &Process {
+		Context: context,
+		CancelFunc: cancelFunc,
+	}
+	go informer.RunMetircsListener(r.MetricsProcess.Context, r.Cache, r.MetricsClient, planner.Spec)
 }
 
 func (r *PlannerReconciler) UpdatePlanner(ctx context.Context, planner *appsv1.Planner) {
 	if err := r.Client.Status().Update(ctx, planner); err != nil {
 		log.Error(err)
 	}
-}
-
-func (r *PlannerReconciler) ClearCache() {
-	r.Cache = types.PlannerCache{}
 }
 

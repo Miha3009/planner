@@ -64,6 +64,12 @@ type PlannerSpec struct {
 	
 	// +kubebuilder:validation:Minimum=1
 	PlanningInterval int `json:"planning_interval,omitempty"`
+	
+	// +kubebuilder:validation:Minimum=1
+	MeticsFetchPeriod int `json:"metrics_fetch_period,omitempty"`
+	
+	// +kubebuilder:validation:Minimum=1
+	MetrcisMaxAge int `json:"metrics_max_age,omitempty"`
 
 	Constraints ConstraintArgsList `json:"constraints,omitempty"`
 	

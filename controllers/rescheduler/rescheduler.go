@@ -49,7 +49,7 @@ func GenPlan(ctx context.Context, events chan types.Event, cache *types.PlannerC
 	cl := constraints.ConvertArgs(&cst)
 	pl := preferences.ConvertArgs(&prf)
 	
-	algo := RandomAlgorithm{100000000, cl, pl}
+	algo := RandomAlgorithm{1000, cl, pl}
 	nodePolicy := KeepNodePolicy{}
 	updatedNodes, nodesToCreate, nodesToDelete := nodePolicy.Run(ctx, &algo, nodes)
 	if helper.ContextEnded(ctx) {
@@ -65,7 +65,7 @@ func GenPlan(ctx context.Context, events chan types.Event, cache *types.PlannerC
 	}
 	
 	log.Info("Plan generated")
-	cache.Plan = plan
+	cache.Plan = &plan
 	events <- types.PlanningEnded
 	return
 }
