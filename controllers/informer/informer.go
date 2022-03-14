@@ -51,7 +51,6 @@ func GetInfo(ctx context.Context, events chan types.Event, cache *types.PlannerC
 
 	log.Info("Info collected")
 	events <- types.InformingEnded
-	return
 }
 
 func RunMetircsListener(ctx context.Context, cache *types.PlannerCache, mclt *metricsv.Clientset, planner appsv1.PlannerSpec) {

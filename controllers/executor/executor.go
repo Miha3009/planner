@@ -28,5 +28,4 @@ func ExecutePlan(ctx context.Context, events chan types.Event, cache *types.Plan
 	log.Info("Plan executed")
 	
 	events <- types.ExecutingEnded
-	return
 }

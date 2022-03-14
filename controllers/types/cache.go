@@ -24,6 +24,7 @@ type PlannerCache struct {
 	Nodes []corev1.Node
 	Pods [][]corev1.Pod
 	Metrics MetricsQueue
+	UpdatedPods []corev1.Pod
 	Plan *Plan
 }
 
@@ -32,6 +33,7 @@ func NewCache() *PlannerCache {
 		Nodes: make([]corev1.Node, 0),
 		Pods: make([][]corev1.Pod, 0),
 		Metrics: NewMetricsQueue(),
+		UpdatedPods: make([]corev1.Pod, 0),
 		Plan: nil,
 	}
 }
@@ -39,6 +41,7 @@ func NewCache() *PlannerCache {
 func (cache *PlannerCache) Clear() {
 	cache.Nodes = make([]corev1.Node, 0)
 	cache.Pods = make([][]corev1.Pod, 0)
+	cache.UpdatedPods = make([]corev1.Pod, 0)
 	cache.Plan = nil
 }
 

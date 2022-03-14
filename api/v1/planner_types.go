@@ -70,6 +70,8 @@ type PlannerSpec struct {
 	
 	// +kubebuilder:validation:Minimum=1
 	MetrcisMaxAge int `json:"metrics_max_age,omitempty"`
+	
+	ResourceUpdateStrategy string `json:"resource_update_strategy,omitempty"`
 
 	Constraints ConstraintArgsList `json:"constraints,omitempty"`
 	

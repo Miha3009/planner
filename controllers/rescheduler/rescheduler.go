@@ -67,7 +67,6 @@ func GenPlan(ctx context.Context, events chan types.Event, cache *types.PlannerC
 	log.Info("Plan generated")
 	cache.Plan = &plan
 	events <- types.PlanningEnded
-	return
 }
 
 func convertNodes(rawNodes []corev1.Node, rawPods [][]corev1.Pod) []types.NodeInfo {

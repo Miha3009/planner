@@ -4,9 +4,10 @@ metadata:
   name: planner-sample
 spec:
   planning_interval: 10
-  namespaces: ["default", "planner-system"]
+  namespaces: ["default"]
   metrics_max_age: 3600
-  metrics_fetch_period: 15
+  metrics_fetch_period: 1
+  resource_update_strategy: "none"
   constraints:
     resource_range:
       minCpu: 5
@@ -16,4 +17,3 @@ spec:
   preferences:
     uniform:
       weight: 1
-

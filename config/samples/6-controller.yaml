@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: planner-controller
-          image: miha3009/planner:v0.2.1
+          image: miha3009/planner:v0.2.2
           imagePullPolicy: Always
           resources:
             requests:
