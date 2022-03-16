@@ -94,6 +94,8 @@ spec:
                     - weight
                     type: object
                 type: object
+              resource_update_strategy:
+                type: string
             type: object
           status:
             description: PlannerStatus defines the observed state of Planner

@@ -30,8 +30,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
+	clientset "k8s.io/client-go/kubernetes"
+
 	types "github.com/miha3009/planner/controllers/types"
-	
 	informer "github.com/miha3009/planner/controllers/informer"
 	rescheduler "github.com/miha3009/planner/controllers/rescheduler"
 	resourceupdater "github.com/miha3009/planner/controllers/resourceupdater"
@@ -46,6 +47,7 @@ type Process struct {
 // PlannerReconciler reconciles a Planner object
 type PlannerReconciler struct {
 	Client client.Client
+	Clientset *clientset.Clientset
 	Log    logr.Logger
 	Scheme *runtime.Scheme
 	MetricsClient *metricsv.Clientset
@@ -82,7 +84,6 @@ func (r *PlannerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			break
 	}
 
-	log.Info("Active: ", planner.Status.Active)
 	if !planner.Status.Active {
 		return restart, nil
 	}
@@ -178,7 +179,7 @@ func (r *PlannerReconciler) ProcessEvent(ctx context.Context, planner *appsv1.Pl
 			planner.Status.Phase = appsv1.Planning
 			return true
 		case types.PlanningEnded:
-			go executor.ExecutePlan(r.MainProcess.Context, r.Events, r.Cache, planner.Spec)
+			go executor.ExecutePlan(r.MainProcess.Context, r.Events, r.Cache, r.Client, r.Clientset, planner.Spec)
 			planner.Status.Phase = appsv1.Executing
 			return true
 		case types.ExecutingEnded:

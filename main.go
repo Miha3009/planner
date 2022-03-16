@@ -29,6 +29,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
+	clientset "k8s.io/client-go/kubernetes"
 
 	appsv1 "github.com/miha3009/planner/api/v1"
 	"github.com/miha3009/planner/controllers"
@@ -59,7 +60,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	clientset, err := metricsv.NewForConfig(config)
+	clientset, err := clientset.NewForConfig(config)
+	if err != nil {
+		log.Error(err, "Unable to get clientset")
+		os.Exit(1)
+	}
+
+	metricsclientset, err := metricsv.NewForConfig(config)
 	if err != nil {
 		log.Error(err, "Unable to get metrics client")
 		os.Exit(1)
@@ -70,9 +77,10 @@ func main() {
 	events <- types.Start
 	reconciler := &controllers.PlannerReconciler{
 		Client: mgr.GetClient(),
+		Clientset: clientset,
 		Log:    ctrl.Log.WithName("controllers").WithName("Planner"),
 		Scheme: mgr.GetScheme(),
-		MetricsClient: clientset,
+		MetricsClient: metricsclientset,
 		Events: events,
 		Cache: types.NewCache(),
 		MainProcess: nil,

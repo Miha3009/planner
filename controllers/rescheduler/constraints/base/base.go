@@ -28,5 +28,5 @@ func (r Base) Apply(node *types.NodeInfo) bool {
 	memorySum := node.MaxMemory - node.AvalibleMemory + helper.CalcPodsMemory(node)
 		
 	return cpuSum <= node.MaxCpu &&
-	       memorySum >= node.MaxMemory
+	       memorySum <= node.MaxMemory
 }

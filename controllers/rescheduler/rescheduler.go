@@ -45,11 +45,11 @@ func GenPlan(ctx context.Context, events chan types.Event, cache *types.PlannerC
 	rawPods := cache.Pods
 	
 	nodes := convertNodes(rawNodes, rawPods)
-
+	
 	cl := constraints.ConvertArgs(&cst)
 	pl := preferences.ConvertArgs(&prf)
 	
-	algo := RandomAlgorithm{1000, cl, pl}
+	algo := RandomAlgorithm{50, cl, pl}
 	nodePolicy := KeepNodePolicy{}
 	updatedNodes, nodesToCreate, nodesToDelete := nodePolicy.Run(ctx, &algo, nodes)
 	if helper.ContextEnded(ctx) {
@@ -100,7 +100,7 @@ func convertNodes(rawNodes []corev1.Node, rawPods [][]corev1.Pod) []types.NodeIn
 
 func convertPods(rawPods []corev1.Pod) []types.PodInfo {
 	pods := make([]types.PodInfo, 0)
-	
+		
 	for i := range rawPods {
 		if !suitableForRescheduling(&rawPods[i]) {
 			continue

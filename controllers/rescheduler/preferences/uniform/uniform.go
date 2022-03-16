@@ -67,7 +67,11 @@ func calcNormalizedVariance(nums []float64) float64 {
 			maxVariance += (sum - mean) * (sum - mean)
 			sum = 0
 		}
-	}	
+	}
+	
+	if maxVariance == 0 {
+		return float64(0)
+	}
 	
 	return variance * 100 / maxVariance
 }

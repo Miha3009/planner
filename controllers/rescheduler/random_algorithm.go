@@ -43,7 +43,7 @@ func (a *RandomAlgorithm) Run(ctx context.Context, oldNodes []types.NodeInfo) []
 		if helper.ContextEnded(ctx) {
 			return nodes
 		}
-	
+			
 		oldNode := &nodes[rand.Intn(N)]
 		newNode := &nodes[rand.Intn(N)]
 
@@ -58,25 +58,22 @@ func (a *RandomAlgorithm) Run(ctx context.Context, oldNodes []types.NodeInfo) []
 		podNum := rand.Intn(M)
 	
 		movement := types.MovementInfo {
-			oldNode.Pods[podNum],
-			*oldNode,
-			*newNode,
+			Pod: oldNode.Pods[podNum],
+			OldNode: helper.DeepCopyNode(oldNode),
+			NewNode: helper.DeepCopyNode(newNode),
 		}
 		
-		if a.Constraints.ApplyForMove(&movement){
-			oldScore, newScore := a.Preferences.ApplyForMove(&movement)
+		if a.Constraints.ApplyForMove(movement) {
+			oldScore, newScore := a.Preferences.ApplyForMove(movement)
 			if newScore > oldScore {
-				a.doMovement(oldNode, newNode, podNum)
+				pod := oldNode.Pods[podNum]
+				newNode.Pods = append(newNode.Pods, pod)
+				oldNode.Pods = append(oldNode.Pods[:podNum], oldNode.Pods[podNum+1:]...)
 			}
 		}
 		
 	}
-	
-	return nodes
-}
 
-func (a *RandomAlgorithm) doMovement(oldNode *types.NodeInfo, newNode *types.NodeInfo, podNum int) {
-	newNode.Pods = append(newNode.Pods, oldNode.Pods[podNum])
-	oldNode.Pods = append(oldNode.Pods[:podNum], oldNode.Pods[podNum+1:]...)
+	return nodes
 }
 

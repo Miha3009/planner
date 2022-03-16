@@ -49,6 +49,12 @@ func DeepCopyPods(pods []types.PodInfo) []types.PodInfo {
 	return copyPods
 }
 
+func DeepCopyNode(node *types.NodeInfo) types.NodeInfo {
+	newNode := *node
+	newNode.Pods = DeepCopyPods(node.Pods)
+	return newNode
+}
+
 func DeepCopyNodes(nodes []types.NodeInfo) []types.NodeInfo {
 	copyNodes := make([]types.NodeInfo, len(nodes))
 	copy(copyNodes, nodes)

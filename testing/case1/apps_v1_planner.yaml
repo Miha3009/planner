@@ -3,17 +3,9 @@ kind: Planner
 metadata:
   name: planner-sample
 spec:
-  planning_interval: 60
+  planning_interval: 30
   namespaces: ["default"]
-  metrics_max_age: 3600
-  metrics_fetch_period: 15
   resource_update_strategy: "none"
-  constraints:
-    resource_range:
-      minCpu: 5
-      maxCpu: 70
-      minMemory: 1
-      maxMemory: 70
   preferences:
     uniform:
       weight: 1

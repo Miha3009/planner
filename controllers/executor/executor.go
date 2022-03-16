@@ -18,14 +18,98 @@ package executor
 
 import (
 	"context"
+	"time"
 	types "github.com/miha3009/planner/controllers/types"
 	appsv1 "github.com/miha3009/planner/api/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clientset "k8s.io/client-go/kubernetes"
+//	driver "github.com/miha3009/planner/controllers/executor/driver"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/prometheus/common/log"
 )
 
-func ExecutePlan(ctx context.Context, events chan types.Event, cache *types.PlannerCache, planner appsv1.PlannerSpec) {
-	log.Info("Plan executed")
+type NodeDriver interface {
+	AddNode(cpu int, memory int) bool
+	DeleteNode(node *corev1.Node) bool
+}
+
+func ExecutePlan(ctx context.Context, events chan types.Event, cache *types.PlannerCache, clt client.Client, cltset *clientset.Clientset, planner appsv1.PlannerSpec) {
+	//cache.Plan.Movements = []types.Movement{genRandomMove(cache)}
+	for _, move := range cache.Plan.Movements {
+		movePod(ctx, cltset, move)
+	}
 	
+	log.Info("Plan executed")
 	events <- types.ExecutingEnded
 }
+
+func movePod (ctx context.Context, cltset *clientset.Clientset, move types.Movement) {
+	newPod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: move.Pod.Namespace,
+			Name:      NewNameForPod(move.Pod),
+			Labels:    move.Pod.Labels,
+		},
+		Spec: move.Pod.Spec,
+	}
+
+	err := createPod(ctx, cltset, newPod, move.NewNode)
+	if err != nil {
+		log.Info(err)
+		return
+	}
+	
+	for !isPodRunning(ctx, cltset, newPod) {
+		time.Sleep(time.Second)
+	}
+		
+	deletePod(ctx, cltset, move.Pod)
+}
+
+func isPodRunning(ctx context.Context, cltset *clientset.Clientset, pod *corev1.Pod) bool {
+	pod, err := cltset.CoreV1().Pods(pod.Namespace).Get(ctx, pod.Name, metav1.GetOptions{})
+	if err != nil {
+		log.Info(err)
+	}
+	return pod.Status.Phase == corev1.PodRunning
+}
+
+func deletePod(ctx context.Context, cltset *clientset.Clientset, pod *corev1.Pod) {
+	err := cltset.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
+	if err != nil {
+		log.Info(err)
+	}
+}
+
+func createPod(ctx context.Context, cltset *clientset.Clientset, pod *corev1.Pod, node *corev1.Node) error {
+	pod.Spec.NodeName = node.Name
+	_, err := cltset.CoreV1().Pods(pod.Namespace).Create(ctx, pod, metav1.CreateOptions{})
+	return err
+}
+
+func genRandomMove(cache *types.PlannerCache) types.Movement {
+	pod := &corev1.Pod{}
+	oldNode := &corev1.Node{}
+	newNode := &corev1.Node{}
+	for i := range cache.Pods {
+		for j := range cache.Pods[i] {
+			pod = &cache.Pods[i][j]
+			oldNode = &cache.Nodes[i]
+		}
+	}
+	
+	if oldNode.Name == cache.Nodes[0].Name {
+		newNode = &cache.Nodes[1]
+	} else {
+		newNode = &cache.Nodes[0]
+	}
+
+	move := types.Movement{Pod: pod, OldNode: oldNode, NewNode: newNode,}
+
+	log.Info("OldNode: ", oldNode.Name, ", NewNode: ", newNode.Name)
+	
+	return move
+}
+

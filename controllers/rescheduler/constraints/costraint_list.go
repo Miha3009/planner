@@ -61,7 +61,7 @@ func (cl *ConstraintList) Apply(node *types.NodeInfo) bool {
 	return true
 }
 
-func (cl *ConstraintList) ApplyForMove(move *types.MovementInfo) bool {
+func (cl *ConstraintList) ApplyForMove(move types.MovementInfo) bool {
 	podNum := -1
 	for i, pod := range move.OldNode.Pods {
 		if pod.Name == move.Pod.Name {

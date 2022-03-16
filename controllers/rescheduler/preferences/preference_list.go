@@ -68,7 +68,7 @@ func (pl *PreferenceList) Apply(nodes []types.NodeInfo) float64 {
 	return score
 }
 
-func (pl *PreferenceList) ApplyForMove(move *types.MovementInfo) (float64, float64) {
+func (pl *PreferenceList) ApplyForMove(move types.MovementInfo) (float64, float64) {
 	podNum := -1
 	for i, pod := range move.OldNode.Pods {
 		if pod.Name == move.Pod.Name {
