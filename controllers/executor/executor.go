@@ -31,12 +31,21 @@ import (
 )
 
 type NodeDriver interface {
-	AddNode(cpu int, memory int) bool
+	AddNode() bool
 	DeleteNode(node *corev1.Node) bool
 }
 
 func ExecutePlan(ctx context.Context, events chan types.Event, cache *types.PlannerCache, clt client.Client, cltset *clientset.Clientset, planner appsv1.PlannerSpec) {
-	//cache.Plan.Movements = []types.Movement{genRandomMove(cache)}
+	/*dp, _ := cltset.AppsV1().Deployments("default").List(ctx, metav1.ListOptions{})
+	for i := range dp.Items {
+		log.Info(dp.Items[i].Name)
+		err := cltset.AppsV1().Deployments("default").Delete(ctx, dp.Items[i].Name, metav1.DeleteOptions{})
+		if err != nil {
+			log.Info(err)
+		}
+	}*/
+
+	cache.Plan.Movements = []types.Movement{genRandomMove(cache)}
 	for _, move := range cache.Plan.Movements {
 		movePod(ctx, cltset, move)
 	}
@@ -50,7 +59,7 @@ func movePod (ctx context.Context, cltset *clientset.Clientset, move types.Movem
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: move.Pod.Namespace,
 			Name:      NewNameForPod(move.Pod),
-			Labels:    move.Pod.Labels,
+			//Labels:    move.Pod.Labels,
 		},
 		Spec: move.Pod.Spec,
 	}
@@ -64,8 +73,23 @@ func movePod (ctx context.Context, cltset *clientset.Clientset, move types.Movem
 	for !isPodRunning(ctx, cltset, newPod) {
 		time.Sleep(time.Second)
 	}
-		
+	
+	/*dp, _ := cltset.AppsV1().Deployments("default").List(ctx, metav1.ListOptions{})
+	for i := range dp.Items {
+		dp.Items[i] = 
+		_, err := cltset.AppsV1().Deployments("default").Update(ctx, &dp.Items[i], metav1.UpdateOptions{})
+		if err != nil {
+			log.Info(err)
+		}
+	}*/
+			
 	deletePod(ctx, cltset, move.Pod)
+	
+	newPod.Labels = move.Pod.Labels
+	_, err = cltset.CoreV1().Pods("default").Update(ctx, newPod, metav1.UpdateOptions{})
+	if err != nil {
+		log.Info(err)
+	}
 }
 
 func isPodRunning(ctx context.Context, cltset *clientset.Clientset, pod *corev1.Pod) bool {

@@ -1,3 +1,3 @@
-./build.sh
-./push.sh
-./run.sh
+./scripts/build.sh
+./scripts/push.sh
+./scripts/run.sh

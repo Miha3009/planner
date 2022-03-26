@@ -38,6 +38,8 @@ func (a *RandomAlgorithm) Run(ctx context.Context, oldNodes []types.NodeInfo) []
 
 	N := len(oldNodes)
 	nodes := helper.DeepCopyNodes(oldNodes)
+	a.Constraints.Init(nodes)
+	a.Preferences.Init(nodes)
 	
 	for j := 0; j <= a.Attempts; j++{
 		if helper.ContextEnded(ctx) {
@@ -54,26 +56,37 @@ func (a *RandomAlgorithm) Run(ctx context.Context, oldNodes []types.NodeInfo) []
 		M := len(oldNode.Pods)
 		if M == 0 {
 			continue
-		}
-		podNum := rand.Intn(M)
-	
+		}	
+		pod := oldNode.Pods[rand.Intn(M)]
+
 		movement := types.MovementInfo {
-			Pod: oldNode.Pods[podNum],
+			Pod: pod,
 			OldNode: helper.DeepCopyNode(oldNode),
 			NewNode: helper.DeepCopyNode(newNode),
 		}
 		
-		if a.Constraints.ApplyForMove(movement) {
+		if a.Constraints.CheckForMove(movement) {
 			oldScore, newScore := a.Preferences.ApplyForMove(movement)
 			if newScore > oldScore {
-				pod := oldNode.Pods[podNum]
-				newNode.Pods = append(newNode.Pods, pod)
-				oldNode.Pods = append(oldNode.Pods[:podNum], oldNode.Pods[podNum+1:]...)
+				a.AddPod(newNode, &pod)
+				a.RemovePod(oldNode, &pod)
 			}
 		}
 		
 	}
 
 	return nodes
+}
+
+func (a *RandomAlgorithm) AddPod(node *types.NodeInfo, pod *types.PodInfo) {
+	node.AddPod(*pod)
+	a.Constraints.AddPod(node, pod)
+	a.Preferences.AddPod(node, pod)
+}
+
+func (a *RandomAlgorithm) RemovePod(node *types.NodeInfo, pod *types.PodInfo) {
+	node.RemovePod(*pod)
+	a.Constraints.RemovePod(node, pod)
+	a.Preferences.RemovePod(node, pod)
 }
 

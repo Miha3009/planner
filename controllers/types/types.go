@@ -34,19 +34,49 @@ const (
 	PhaseEndedWithError = 6
 )
 
+const MaxPreferenceScore = float64(100)
+
 type PodInfo struct {
+	Pod *corev1.Pod
 	Name string
 	Cpu int64
 	Memory int64
 }
 
 type NodeInfo struct {
+	Node *corev1.Node
 	Name string
 	MaxCpu int64
 	MaxMemory int64
 	AvalibleCpu int64
 	AvalibleMemory int64
+
 	Pods []PodInfo
+	PodsCpu int64
+	PodsMemory int64
+	Ports map[string]map[int32]struct{}
+	PortsConflict map[string]map[int32]int
+	UntoleratedPods []string
+}
+
+func (n *NodeInfo) AddPod(p PodInfo) {
+	n.Pods = append(n.Pods, p)
+}
+
+func (n *NodeInfo) RemovePod(p PodInfo) {
+	podNum := -1
+	for i, pod := range n.Pods {
+		if pod.Name == p.Name {
+			podNum = i
+			break
+		}
+	}
+	
+	if podNum == -1 {
+		return
+	}
+	
+	n.Pods = append(n.Pods[:podNum], n.Pods[podNum+1:]...)
 }
 
 type MovementInfo struct {

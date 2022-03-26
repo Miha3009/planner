@@ -21,6 +21,9 @@ import (
 )
 
 type Preference interface {
+	Init(node *types.NodeInfo)
+	AddPod(node *types.NodeInfo, pod *types.PodInfo)
+	RemovePod(node *types.NodeInfo, pod *types.PodInfo)
 	// Result is normalized to 0-100 interval.
 	Apply(nodes []types.NodeInfo) float64
 }

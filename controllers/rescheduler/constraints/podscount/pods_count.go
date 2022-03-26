@@ -14,15 +14,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package constraints
+package podscount
 
 import (
+	appsv1 "github.com/miha3009/planner/api/v1"
 	types "github.com/miha3009/planner/controllers/types"
 )
 
-type Constraint interface {
-	Init(node *types.NodeInfo)
-	AddPod(node *types.NodeInfo, pod *types.PodInfo)
-	RemovePod(node *types.NodeInfo, pod *types.PodInfo)
-	Check(node *types.NodeInfo) bool
+type PodsCount struct {
+	Args appsv1.PodsCountArgs
 }
+
+func (r PodsCount) Init(node *types.NodeInfo) {
+}
+
+func (r PodsCount) AddPod(node *types.NodeInfo, pod *types.PodInfo) {
+}
+
+func (r PodsCount) RemovePod(node *types.NodeInfo, pod *types.PodInfo) {
+}
+
+func (r PodsCount) Check(node *types.NodeInfo) bool {
+	return len(node.Pods) <= r.Args.MaxCount
+}
+

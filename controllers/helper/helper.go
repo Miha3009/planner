@@ -19,6 +19,7 @@ package helper
 import (
 	"context"
 	"time"
+	"math"
 
 	types "github.com/miha3009/planner/controllers/types"
 )
@@ -78,5 +79,44 @@ func SleepWithContext(ctx context.Context, delay time.Duration) {
     	case <-ctx.Done():
     	case <-time.After(delay):
     }
+}
+
+func Max(nums []float64) float64 {
+	max := math.Inf(-1)
+	for i := range nums {
+		if nums[i] > max {
+			max = nums[i]
+		}
+	}
+	return max
+}
+
+func Sum(nums []float64) float64 {
+	sum := float64(0)
+	for i := range nums {
+		sum += nums[i]
+	}
+	return sum
+}
+
+func Mean(nums []float64) float64 {
+	if len(nums) == 0 {
+		return float64(0)
+	}
+
+	return Sum(nums) / float64(len(nums))
+}
+
+func Variance(nums []float64) float64 {
+	if len(nums) == 0 {
+		return float64(0)
+	}
+
+	mean := Mean(nums)
+	variance := float64(0)
+	for i := range nums {
+		variance += (nums[i] - mean) * (nums[i] - mean)
+	}
+	return variance / float64(len(nums))
 }
 

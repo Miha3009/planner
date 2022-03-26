@@ -14,15 +14,32 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package constraints
+package podaffinity
 
 import (
 	types "github.com/miha3009/planner/controllers/types"
 )
 
-type Constraint interface {
-	Init(node *types.NodeInfo)
-	AddPod(node *types.NodeInfo, pod *types.PodInfo)
-	RemovePod(node *types.NodeInfo, pod *types.PodInfo)
-	Check(node *types.NodeInfo) bool
+type TopologyPair struct {
+	key string
+	value string
 }
+
+type PodAffinity struct {
+	topology map[TopologyPair]int
+}
+
+func (r PodAffinity) Init(node *types.NodeInfo) {
+}
+
+func (r PodAffinity) AddPod(node *types.NodeInfo, pod *types.PodInfo) {
+}
+
+func (r PodAffinity) RemovePod(node *types.NodeInfo, pod *types.PodInfo) {
+}
+
+// Not supported yet
+func (r PodAffinity) Check(node *types.NodeInfo) bool {
+	return true
+}
+

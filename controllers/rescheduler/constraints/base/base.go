@@ -18,15 +18,29 @@ package base
 
 import (
 	types "github.com/miha3009/planner/controllers/types"
-	helper "github.com/miha3009/planner/controllers/helper"
 )
 
 type Base struct {}
 
-func (r Base) Apply(node *types.NodeInfo) bool {
-	cpuSum := node.MaxCpu - node.AvalibleCpu + helper.CalcPodsCpu(node)
-	memorySum := node.MaxMemory - node.AvalibleMemory + helper.CalcPodsMemory(node)
-		
-	return cpuSum <= node.MaxCpu &&
-	       memorySum <= node.MaxMemory
+func (r Base) Init(node *types.NodeInfo) {
+	node.PodsCpu = int64(0)
+	node.PodsMemory = int64(0)
+	for i := range node.Pods {
+		r.AddPod(node, &node.Pods[i])
+	}
+}
+
+func (r Base) AddPod(node *types.NodeInfo, pod *types.PodInfo) {
+	node.PodsCpu += pod.Cpu
+	node.PodsMemory += pod.Memory
+}
+
+func (r Base) RemovePod(node *types.NodeInfo, pod *types.PodInfo) {
+	node.PodsCpu -= pod.Cpu
+	node.PodsMemory -= pod.Memory	
+}
+
+func (r Base) Check(node *types.NodeInfo) bool {
+	return node.PodsCpu <= node.AvalibleCpu &&
+	       node.PodsMemory <= node.AvalibleMemory
 }

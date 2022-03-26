@@ -38,23 +38,48 @@ type ResourceRangeArgs struct {
 	MaxMemory int64 `json:"maxMemory,omitempty"`
 }
 
+type PodsCountArgs struct {
+	// +kubebuilder:validation:Minimum=1
+	MaxCount int `json:"maxCount"`
+}
+
 type ConstraintArgsList struct {
 	ResourceRange *ResourceRangeArgs `json:"resource_range,omitempty"`
+	PodsCount *PodsCountArgs `json:"pods_count,omitempty"`
 }
 
 type UniformArgs struct {
-	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Minimum=1
 	Weight int `json:"weight"`
 }
 
 type MaximizeInequalityArgs struct {
-	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Minimum=1
 	Weight int `json:"weight"`
+}
+
+type BalancedArgs struct {
+	// +kubebuilder:validation:Minimum=1
+	Weight int `json:"weight"`
+}
+
+type TopologyKey struct {
+	Name string `json:"name"`
+	// +kubebuilder:validation:Minimum=1
+	Weight int `json:"weight"`
+}
+
+type TopologySpreadArgs struct {
+	// +kubebuilder:validation:Minimum=1
+	Weight int `json:"weight"`
+	Keys []TopologyKey `json:"keys"`
 }
 
 type PreferenceArgsList struct {
 	Uniform *UniformArgs `json:"uniform,omitempty"`
 	MaximizeInequality *MaximizeInequalityArgs `json:"maximize_inequality,omitempty"`
+	Balanced *BalancedArgs `json:"balanced,omitempty"`
+	TopologySpread *TopologySpreadArgs `json:"topology_spread,omitempty"`
 }
 
 // PlannerSpec defines the desired state of Planner

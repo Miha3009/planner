@@ -18,12 +18,44 @@ package maximizeinequality
 
 import (
 	types "github.com/miha3009/planner/controllers/types"
-	uniform "github.com/miha3009/planner/controllers/rescheduler/preferences/uniform"
+	helper "github.com/miha3009/planner/controllers/helper"
 )
 
 type MaximizeInequality struct {}
 
-func (r MaximizeInequality) Apply(nodes []types.NodeInfo) float64 {
-	u := uniform.Uniform{}
-	return 100 - u.Apply(nodes)
+func (r MaximizeInequality) Init(node *types.NodeInfo) {
 }
+
+func (r MaximizeInequality) AddPod(node *types.NodeInfo, pod *types.PodInfo) {
+}
+
+func (r MaximizeInequality) RemovePod(node *types.NodeInfo, pod *types.PodInfo) {
+}
+
+func (r MaximizeInequality) Apply(nodes []types.NodeInfo) float64 {
+	N := len(nodes)
+	cpuPercentage := make([]float64, N)
+	memoryPercentage := make([]float64, N)
+
+	for i, node := range nodes {
+		cpuSum := node.MaxCpu - node.AvalibleCpu + node.PodsCpu
+		memorySum := node.MaxMemory - node.AvalibleMemory + node.PodsMemory
+		cpuPercentage[i] = float64(cpuSum) / float64(node.MaxCpu) 
+		memoryPercentage[i] = float64(memorySum) / float64(node.MaxMemory) 
+	}
+
+	cpuVariance := calcNormalizedVariance(cpuPercentage)
+	memoryVariance := calcNormalizedVariance(memoryPercentage)
+	
+	return (cpuVariance + memoryVariance) / 2
+}
+
+func calcNormalizedVariance(nums []float64) float64 {
+	if len(nums) == 0 {
+		return float64(0)
+	}
+
+	maxVariance := float64(0.5)
+	return helper.Variance(nums) * types.MaxPreferenceScore / maxVariance
+}
+

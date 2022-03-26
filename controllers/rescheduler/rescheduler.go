@@ -79,19 +79,18 @@ func convertNodes(rawNodes []corev1.Node, rawPods [][]corev1.Pod) []types.NodeIn
 		maxMemory := resourceToInt(node.Status.Capacity.Memory(), "mem")
 
 		pods := convertPods(rawPods[i])
-		
-		/*for _, pod := range pods {
-			avalibleCpu += pod.Cpu
-			avalibleMemory += pod.Memory
-		}*/
-
+	
 		nodes[i] = types.NodeInfo {
-			node.Name,
-			maxCpu,
-			maxMemory,
-			avalibleCpu,
-			avalibleMemory,
-			pods,
+			Name: node.Name,
+			MaxCpu: maxCpu,
+			MaxMemory: maxMemory,
+			AvalibleCpu: avalibleCpu,
+			AvalibleMemory: avalibleMemory,
+			Pods: make([]types.PodInfo, 0),
+		}
+		
+		for j := range pods {
+			nodes[i].AddPod(pods[j])
 		}
 	}
 	
@@ -113,7 +112,11 @@ func convertPods(rawPods []corev1.Pod) []types.PodInfo {
 			memorySum += resourceToInt(container.Resources.Requests.Memory(), "mem")
 		}
 		
-		pod := types.PodInfo {rawPods[i].Name, cpuSum, memorySum,}
+		pod := types.PodInfo {
+			Name: rawPods[i].Name,
+			Cpu: cpuSum,
+			Memory: memorySum,
+		}
 		pods = append(pods, pod)
 	}
 	

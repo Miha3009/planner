@@ -38,6 +38,14 @@ spec:
             properties:
               constraints:
                 properties:
+                  pods_count:
+                    properties:
+                      maxCount:
+                        minimum: 1
+                        type: integer
+                    required:
+                    - maxCount
+                    type: object
                   resource_range:
                     properties:
                       maxCpu:
@@ -77,18 +85,48 @@ spec:
                 type: integer
               preferences:
                 properties:
+                  balanced:
+                    properties:
+                      weight:
+                        minimum: 1
+                        type: integer
+                    required:
+                    - weight
+                    type: object
                   maximize_inequality:
                     properties:
                       weight:
-                        minimum: 0
+                        minimum: 1
                         type: integer
                     required:
+                    - weight
+                    type: object
+                  topology_spread:
+                    properties:
+                      keys:
+                        items:
+                          properties:
+                            name:
+                              type: string
+                            weight:
+                              minimum: 1
+                              type: integer
+                          required:
+                          - name
+                          - weight
+                          type: object
+                        type: array
+                      weight:
+                        minimum: 1
+                        type: integer
+                    required:
+                    - keys
                     - weight
                     type: object
                   uniform:
                     properties:
                       weight:
-                        minimum: 0
+                        minimum: 1
                         type: integer
                     required:
                     - weight
