@@ -14,17 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package uniform
+package algorithm
 
 import (
-	"testing"
+    "context"
 
-	uniform "github.com/miha3009/planner/controllers/preferences/uniform"	
+    types "github.com/miha3009/planner/controllers/types"
 )
 
-func TestGood (t *testing.T) {
-	t.Log(uniform.CalcNormalizedVariance([]float64{0.89, 0.01}))
-	t.Log(uniform.CalcNormalizedVariance([]float64{0.9, 0.0}))
-	t.Log(uniform.CalcNormalizedVariance([]float64{0.45, 0.45}))
+type Algorithm interface {
+    Run(ctx context.Context, nodes []types.NodeInfo, freePods []types.PodInfo) (updatedNodes []types.NodeInfo, ok bool)
 }
-

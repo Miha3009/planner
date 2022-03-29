@@ -17,31 +17,30 @@ limitations under the License.
 package types
 
 import (
-	corev1 "k8s.io/api/core/v1"
+    corev1 "k8s.io/api/core/v1"
 )
 
 type PlannerCache struct {
-	Nodes []corev1.Node
-	Pods [][]corev1.Pod
-	Metrics MetricsQueue
-	UpdatedPods []corev1.Pod
-	Plan *Plan
+    Nodes       []corev1.Node
+    Pods        [][]corev1.Pod
+    Metrics     MetricsQueue
+    UpdatedPods []corev1.Pod
+    Plan        *Plan
 }
 
 func NewCache() *PlannerCache {
-	return &PlannerCache{
-		Nodes: make([]corev1.Node, 0),
-		Pods: make([][]corev1.Pod, 0),
-		Metrics: NewMetricsQueue(),
-		UpdatedPods: make([]corev1.Pod, 0),
-		Plan: nil,
-	}
+    return &PlannerCache{
+        Nodes:       make([]corev1.Node, 0),
+        Pods:        make([][]corev1.Pod, 0),
+        Metrics:     NewMetricsQueue(),
+        UpdatedPods: make([]corev1.Pod, 0),
+        Plan:        nil,
+    }
 }
 
 func (cache *PlannerCache) Clear() {
-	cache.Nodes = make([]corev1.Node, 0)
-	cache.Pods = make([][]corev1.Pod, 0)
-	cache.UpdatedPods = make([]corev1.Pod, 0)
-	cache.Plan = nil
+    cache.Nodes = make([]corev1.Node, 0)
+    cache.Pods = make([][]corev1.Pod, 0)
+    cache.UpdatedPods = make([]corev1.Pod, 0)
+    cache.Plan = nil
 }
-

@@ -17,16 +17,16 @@ limitations under the License.
 package resourcerange
 
 import (
-	appsv1 "github.com/miha3009/planner/api/v1"
-	types "github.com/miha3009/planner/controllers/types"
+    appsv1 "github.com/miha3009/planner/api/v1"
+    types "github.com/miha3009/planner/controllers/types"
 )
 
 type ResourceRange struct {
-	Args appsv1.ResourceRangeArgs
+    Args appsv1.ResourceRangeArgs
 }
 
 func Validate(args *appsv1.ResourceRangeArgs) bool {
-	return args.MinCpu <= args.MaxCpu && args.MinMemory <= args.MaxMemory 
+    return args.MinCpu <= args.MaxCpu && args.MinMemory <= args.MaxMemory
 }
 
 func (r ResourceRange) Init(node *types.NodeInfo) {
@@ -39,12 +39,11 @@ func (r ResourceRange) RemovePod(node *types.NodeInfo, pod *types.PodInfo) {
 }
 
 func (r ResourceRange) Check(node *types.NodeInfo) bool {
-	cpuSum := node.MaxCpu - node.AvalibleCpu + node.PodsCpu
-	memorySum := node.MaxMemory - node.AvalibleMemory + node.PodsMemory
+    cpuSum := node.MaxCpu - node.AvalibleCpu + node.PodsCpu
+    memorySum := node.MaxMemory - node.AvalibleMemory + node.PodsMemory
 
-	return cpuSum >= node.MaxCpu * r.Args.MinCpu / 100 &&
-	       memorySum >= node.MaxMemory * r.Args.MinMemory / 100 &&
-	       cpuSum <= node.MaxCpu * r.Args.MaxCpu / 100 &&
-	       memorySum <= node.MaxMemory * r.Args.MaxMemory / 100
+    return cpuSum >= node.MaxCpu*r.Args.MinCpu/100 &&
+        memorySum >= node.MaxMemory*r.Args.MinMemory/100 &&
+        cpuSum <= node.MaxCpu*r.Args.MaxCpu/100 &&
+        memorySum <= node.MaxMemory*r.Args.MaxMemory/100
 }
-

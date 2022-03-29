@@ -17,106 +17,105 @@ limitations under the License.
 package helper
 
 import (
-	"context"
-	"time"
-	"math"
+    "context"
+    "math"
+    "time"
 
-	types "github.com/miha3009/planner/controllers/types"
+    types "github.com/miha3009/planner/controllers/types"
 )
 
-func CalcPodsCpu (node *types.NodeInfo) int64 {
-	cpuSum := int64(0)
-	
-	for _, pod := range node.Pods {
-		cpuSum += pod.Cpu
-	}
-	
-	return cpuSum
+func CalcPodsCpu(node *types.NodeInfo) int64 {
+    cpuSum := int64(0)
+
+    for _, pod := range node.Pods {
+        cpuSum += pod.Cpu
+    }
+
+    return cpuSum
 }
 
-func CalcPodsMemory (node *types.NodeInfo) int64 {
-	memorySum := int64(0)
-	
-	for _, pod := range node.Pods {
-		memorySum += pod.Memory
-	}
-	
-	return memorySum
+func CalcPodsMemory(node *types.NodeInfo) int64 {
+    memorySum := int64(0)
+
+    for _, pod := range node.Pods {
+        memorySum += pod.Memory
+    }
+
+    return memorySum
 }
 
 func DeepCopyPods(pods []types.PodInfo) []types.PodInfo {
-	copyPods := make([]types.PodInfo, len(pods))
-	copy(copyPods, pods)
-	return copyPods
+    copyPods := make([]types.PodInfo, len(pods))
+    copy(copyPods, pods)
+    return copyPods
 }
 
 func DeepCopyNode(node *types.NodeInfo) types.NodeInfo {
-	newNode := *node
-	newNode.Pods = DeepCopyPods(node.Pods)
-	return newNode
+    newNode := *node
+    newNode.Pods = DeepCopyPods(node.Pods)
+    return newNode
 }
 
 func DeepCopyNodes(nodes []types.NodeInfo) []types.NodeInfo {
-	copyNodes := make([]types.NodeInfo, len(nodes))
-	copy(copyNodes, nodes)
-	for i := range nodes {
-		copyNodes[i].Pods = DeepCopyPods(nodes[i].Pods)
-	}
-	return copyNodes
+    copyNodes := make([]types.NodeInfo, len(nodes))
+    copy(copyNodes, nodes)
+    for i := range nodes {
+        copyNodes[i].Pods = DeepCopyPods(nodes[i].Pods)
+    }
+    return copyNodes
 }
 
 func ContextEnded(ctx context.Context) bool {
-	select {
-		case <-ctx.Done():
-			return true
-		default:
-			return false
-	}
+    select {
+    case <-ctx.Done():
+        return true
+    default:
+        return false
+    }
 }
 
 func SleepWithContext(ctx context.Context, delay time.Duration) {
     select {
-    	case <-ctx.Done():
-    	case <-time.After(delay):
+    case <-ctx.Done():
+    case <-time.After(delay):
     }
 }
 
 func Max(nums []float64) float64 {
-	max := math.Inf(-1)
-	for i := range nums {
-		if nums[i] > max {
-			max = nums[i]
-		}
-	}
-	return max
+    max := math.Inf(-1)
+    for i := range nums {
+        if nums[i] > max {
+            max = nums[i]
+        }
+    }
+    return max
 }
 
 func Sum(nums []float64) float64 {
-	sum := float64(0)
-	for i := range nums {
-		sum += nums[i]
-	}
-	return sum
+    sum := float64(0)
+    for i := range nums {
+        sum += nums[i]
+    }
+    return sum
 }
 
 func Mean(nums []float64) float64 {
-	if len(nums) == 0 {
-		return float64(0)
-	}
+    if len(nums) == 0 {
+        return float64(0)
+    }
 
-	return Sum(nums) / float64(len(nums))
+    return Sum(nums) / float64(len(nums))
 }
 
 func Variance(nums []float64) float64 {
-	if len(nums) == 0 {
-		return float64(0)
-	}
+    if len(nums) == 0 {
+        return float64(0)
+    }
 
-	mean := Mean(nums)
-	variance := float64(0)
-	for i := range nums {
-		variance += (nums[i] - mean) * (nums[i] - mean)
-	}
-	return variance / float64(len(nums))
+    mean := Mean(nums)
+    variance := float64(0)
+    for i := range nums {
+        variance += (nums[i] - mean) * (nums[i] - mean)
+    }
+    return variance / float64(len(nums))
 }
-

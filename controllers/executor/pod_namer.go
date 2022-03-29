@@ -17,49 +17,49 @@ limitations under the License.
 package executor
 
 import (
-	"math/rand"
-	"strings"
-	"bytes"
-	corev1 "k8s.io/api/core/v1"
+    "bytes"
+    "math/rand"
+    "strings"
+
+    corev1 "k8s.io/api/core/v1"
 )
 
 func NewNameForPod(pod *corev1.Pod) string {
-	name := pod.Name
-	name_parts := strings.Split(name, "-")
-	N := len(name_parts)
+    name := pod.Name
+    name_parts := strings.Split(name, "-")
+    N := len(name_parts)
 
-	if N == 1 {
-		name_parts = append(name_parts, genEndPart())
-		N++
-	} else {
-		name_parts[N - 1] = genEndPart()
-	}
+    if N == 1 {
+        name_parts = append(name_parts, genEndPart())
+        N++
+    } else {
+        name_parts[N-1] = genEndPart()
+    }
 
-	buf := bytes.Buffer{}
-	for i := 0; i < N; i++ {
-		buf.WriteString(name_parts[i])
-		if i != N - 1 {
-			buf.WriteString("-")
-		}
-	}
-	return buf.String()
+    buf := bytes.Buffer{}
+    for i := 0; i < N; i++ {
+        buf.WriteString(name_parts[i])
+        if i != N-1 {
+            buf.WriteString("-")
+        }
+    }
+    return buf.String()
 }
 
 func genEndPart() string {
-	part := make([]byte, 5)
-	for i := 0; i < 5; i++ {
-		part[i] = genRandomChar()
-	}
-	return string(part)
+    part := make([]byte, 5)
+    for i := 0; i < 5; i++ {
+        part[i] = genRandomChar()
+    }
+    return string(part)
 }
 
 func genRandomChar() byte {
-	c := rand.Intn(36)
-	if c < 26 {
-		return byte('a' + c)
-	} else {
-		c -= 26
-		return byte('0' + c)
-	}
+    c := rand.Intn(36)
+    if c < 26 {
+        return byte('a' + c)
+    } else {
+        c -= 26
+        return byte('0' + c)
+    }
 }
-

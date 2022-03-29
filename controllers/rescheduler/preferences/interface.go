@@ -17,13 +17,13 @@ limitations under the License.
 package preferences
 
 import (
-	types "github.com/miha3009/planner/controllers/types"
+    types "github.com/miha3009/planner/controllers/types"
 )
 
 type Preference interface {
-	Init(node *types.NodeInfo)
-	AddPod(node *types.NodeInfo, pod *types.PodInfo)
-	RemovePod(node *types.NodeInfo, pod *types.PodInfo)
-	// Result is normalized to 0-100 interval.
-	Apply(nodes []types.NodeInfo) float64
+    Init(node *types.NodeInfo)
+    AddPod(node *types.NodeInfo, pod *types.PodInfo)
+    RemovePod(node *types.NodeInfo, pod *types.PodInfo)
+    // Result is normalized to 0-100 interval.
+    Apply(nodes []types.NodeInfo) float64
 }

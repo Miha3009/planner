@@ -17,30 +17,21 @@ limitations under the License.
 package base
 
 import (
-	types "github.com/miha3009/planner/controllers/types"
+    types "github.com/miha3009/planner/controllers/types"
 )
 
-type Base struct {}
+type Base struct{}
 
 func (r Base) Init(node *types.NodeInfo) {
-	node.PodsCpu = int64(0)
-	node.PodsMemory = int64(0)
-	for i := range node.Pods {
-		r.AddPod(node, &node.Pods[i])
-	}
 }
 
 func (r Base) AddPod(node *types.NodeInfo, pod *types.PodInfo) {
-	node.PodsCpu += pod.Cpu
-	node.PodsMemory += pod.Memory
 }
 
 func (r Base) RemovePod(node *types.NodeInfo, pod *types.PodInfo) {
-	node.PodsCpu -= pod.Cpu
-	node.PodsMemory -= pod.Memory	
 }
 
 func (r Base) Check(node *types.NodeInfo) bool {
-	return node.PodsCpu <= node.AvalibleCpu &&
-	       node.PodsMemory <= node.AvalibleMemory
+    return node.PodsCpu <= node.AvalibleCpu &&
+        node.PodsMemory <= node.AvalibleMemory
 }

@@ -17,12 +17,12 @@ limitations under the License.
 package podscount
 
 import (
-	appsv1 "github.com/miha3009/planner/api/v1"
-	types "github.com/miha3009/planner/controllers/types"
+    appsv1 "github.com/miha3009/planner/api/v1"
+    types "github.com/miha3009/planner/controllers/types"
 )
 
 type PodsCount struct {
-	Args appsv1.PodsCountArgs
+    Args appsv1.PodsCountArgs
 }
 
 func (r PodsCount) Init(node *types.NodeInfo) {
@@ -35,6 +35,5 @@ func (r PodsCount) RemovePod(node *types.NodeInfo, pod *types.PodInfo) {
 }
 
 func (r PodsCount) Check(node *types.NodeInfo) bool {
-	return len(node.Pods) <= r.Args.MaxCount
+    return len(node.Pods) <= r.Args.MaxCount
 }
-

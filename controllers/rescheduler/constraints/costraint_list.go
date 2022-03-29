@@ -17,86 +17,86 @@ limitations under the License.
 package constraints
 
 import (
-	appsv1 "github.com/miha3009/planner/api/v1"
-	types "github.com/miha3009/planner/controllers/types"
-	base "github.com/miha3009/planner/controllers/rescheduler/constraints/base"
-	ports "github.com/miha3009/planner/controllers/rescheduler/constraints/ports"
-	podscount "github.com/miha3009/planner/controllers/rescheduler/constraints/podscount"
-	podaffinity "github.com/miha3009/planner/controllers/rescheduler/constraints/podaffinity"
-	tainttoleration "github.com/miha3009/planner/controllers/rescheduler/constraints/tainttoleration"
-	resourcerange "github.com/miha3009/planner/controllers/rescheduler/constraints/resourcerange"
-	"github.com/prometheus/common/log"
+    appsv1 "github.com/miha3009/planner/api/v1"
+    base "github.com/miha3009/planner/controllers/rescheduler/constraints/base"
+    podaffinity "github.com/miha3009/planner/controllers/rescheduler/constraints/podaffinity"
+    podscount "github.com/miha3009/planner/controllers/rescheduler/constraints/podscount"
+    ports "github.com/miha3009/planner/controllers/rescheduler/constraints/ports"
+    resourcerange "github.com/miha3009/planner/controllers/rescheduler/constraints/resourcerange"
+    tainttoleration "github.com/miha3009/planner/controllers/rescheduler/constraints/tainttoleration"
+    types "github.com/miha3009/planner/controllers/types"
+    "github.com/prometheus/common/log"
 )
 
 type ConstraintList struct {
-	Items []Constraint
+    Items []Constraint
 }
 
 func ConvertArgs(cst *appsv1.ConstraintArgsList) ConstraintList {
-	cl := make([]Constraint, 4)
-	cl[0] = base.Base{}
-	cl[1] = ports.Ports{}
-	cl[2] = tainttoleration.TaintToleration{}
-	cl[3] = podaffinity.PodAffinity{}
-	
-	if cst.ResourceRange != nil {
-		if resourcerange.Validate(cst.ResourceRange) {
-			cl = append(cl, resourcerange.ResourceRange{Args: *cst.ResourceRange})
-		} else {
-			log.Info("Constraint 'resource range' has wrong args")
-		}
-	}
-	
-	if cst.PodsCount != nil {
-		cl = append(cl, podscount.PodsCount{Args: *cst.PodsCount})
-	}
-	
-	return ConstraintList{Items: cl}
+    cl := make([]Constraint, 4)
+    cl[0] = base.Base{}
+    cl[1] = ports.Ports{}
+    cl[2] = tainttoleration.TaintToleration{}
+    cl[3] = podaffinity.PodAffinity{}
+
+    if cst.ResourceRange != nil {
+        if resourcerange.Validate(cst.ResourceRange) {
+            cl = append(cl, resourcerange.ResourceRange{Args: *cst.ResourceRange})
+        } else {
+            log.Info("Constraint 'resource range' has wrong args")
+        }
+    }
+
+    if cst.PodsCount != nil {
+        cl = append(cl, podscount.PodsCount{Args: *cst.PodsCount})
+    }
+
+    return ConstraintList{Items: cl}
 }
 
 func (cl *ConstraintList) Init(nodes []types.NodeInfo) {
-	for i := range nodes {
-		for j := range cl.Items {
-			cl.Items[j].Init(&nodes[i])
-		}
-	}
+    for i := range nodes {
+        for j := range cl.Items {
+            cl.Items[j].Init(&nodes[i])
+        }
+    }
 }
 
 func (cl *ConstraintList) AddPod(node *types.NodeInfo, pod *types.PodInfo) {
-	for i := range cl.Items {
-		cl.Items[i].AddPod(node, pod)
-	}
+    for i := range cl.Items {
+        cl.Items[i].AddPod(node, pod)
+    }
 }
 
 func (cl *ConstraintList) RemovePod(node *types.NodeInfo, pod *types.PodInfo) {
-	for i := range cl.Items {
-		cl.Items[i].RemovePod(node, pod)
-	}
+    for i := range cl.Items {
+        cl.Items[i].RemovePod(node, pod)
+    }
 }
 
 func (cl *ConstraintList) CheckForAll(nodes []types.NodeInfo) bool {
-	for _, node := range nodes {
-		if !cl.Check(&node) {
-			return false
-		}
-	}
-	return true
+    for _, node := range nodes {
+        if !cl.Check(&node) {
+            return false
+        }
+    }
+    return true
 }
 
 func (cl *ConstraintList) Check(node *types.NodeInfo) bool {
-	for _, c := range cl.Items {
-		if !c.Check(node) {
-			return false
-		}
-	}
-	return true
+    for _, c := range cl.Items {
+        if !c.Check(node) {
+            return false
+        }
+    }
+    return true
 }
 
 func (cl *ConstraintList) CheckForMove(move types.MovementInfo) bool {
-	move.NewNode.AddPod(move.Pod)
-	cl.AddPod(&move.NewNode, &move.Pod)
-	move.OldNode.RemovePod(move.Pod)
-	cl.RemovePod(&move.OldNode, &move.Pod)
+    move.NewNode.AddPod(move.Pod)
+    cl.AddPod(&move.NewNode, &move.Pod)
+    move.OldNode.RemovePod(move.Pod)
+    cl.RemovePod(&move.OldNode, &move.Pod)
 
-	return cl.Check(&move.NewNode) && cl.Check(&move.OldNode)
+    return cl.Check(&move.NewNode) && cl.Check(&move.OldNode)
 }

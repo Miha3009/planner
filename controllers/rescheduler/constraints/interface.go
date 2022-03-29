@@ -17,12 +17,12 @@ limitations under the License.
 package constraints
 
 import (
-	types "github.com/miha3009/planner/controllers/types"
+    types "github.com/miha3009/planner/controllers/types"
 )
 
 type Constraint interface {
-	Init(node *types.NodeInfo)
-	AddPod(node *types.NodeInfo, pod *types.PodInfo)
-	RemovePod(node *types.NodeInfo, pod *types.PodInfo)
-	Check(node *types.NodeInfo) bool
+    Init(node *types.NodeInfo)
+    AddPod(node *types.NodeInfo, pod *types.PodInfo)
+    RemovePod(node *types.NodeInfo, pod *types.PodInfo)
+    Check(node *types.NodeInfo) bool
 }

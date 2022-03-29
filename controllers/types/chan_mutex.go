@@ -16,33 +16,29 @@ limitations under the License.
 
 package types
 
-import (
-)
-
 type ChanMutex struct {
-	lockChan chan struct{}
+    lockChan chan struct{}
 }
 
 func NewChanMutex() *ChanMutex {
-	return &ChanMutex{
-		lockChan: make(chan struct{}, 1),
-	}
+    return &ChanMutex{
+        lockChan: make(chan struct{}, 1),
+    }
 }
 
 func (m *ChanMutex) Lock() {
-	m.lockChan <- struct{}{}
+    m.lockChan <- struct{}{}
 }
 
 func (m *ChanMutex) Unlock() {
-	<-m.lockChan
+    <-m.lockChan
 }
 
 func (m *ChanMutex) TryLock() bool {
-	select {
-	case m.lockChan <- struct{}{}:
-		return true
-	default:
-		return false
-	}
+    select {
+    case m.lockChan <- struct{}{}:
+        return true
+    default:
+        return false
+    }
 }
-

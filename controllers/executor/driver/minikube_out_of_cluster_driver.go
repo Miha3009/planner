@@ -17,22 +17,23 @@ limitations under the License.
 package driver
 
 import (
-	"os/exec"
-	corev1 "k8s.io/api/core/v1"
-	"github.com/prometheus/common/log"
+    "os/exec"
+
+    "github.com/prometheus/common/log"
+    corev1 "k8s.io/api/core/v1"
 )
 
-type MinikubeOutOfClusterDriver struct {}
+type MinikubeOutOfClusterDriver struct{}
 
 func (d *MinikubeOutOfClusterDriver) AddNode() bool {
-	cmd := exec.Command("minikube", "node", "add")
-	err := cmd.Run()
+    cmd := exec.Command("minikube", "node", "add")
+    err := cmd.Run()
 
-	if err != nil {
-		log.Info(err)
-		return false
-	}
-	return true
+    if err != nil {
+        log.Info(err)
+        return false
+    }
+    return true
 }
 
 func (d *MinikubeOutOfClusterDriver) DeleteNode(node *corev1.Node) bool {

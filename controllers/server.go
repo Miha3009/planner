@@ -17,25 +17,26 @@ limitations under the License.
 package controllers
 
 import (
-	"fmt"
-	"net/http"
-	"github.com/prometheus/common/log"
-	types "github.com/miha3009/planner/controllers/types"
+    "fmt"
+    "net/http"
+
+    types "github.com/miha3009/planner/controllers/types"
+    "github.com/prometheus/common/log"
 )
 
 func RunServer(reconciler *PlannerReconciler) {
-    http.HandleFunc("/start", func(w http.ResponseWriter, r *http.Request){
-    	if r.Method == "POST" {
-    		reconciler.Events <- types.Start
-    		fmt.Fprint(w, "Planner started\n")
-    	}
+    http.HandleFunc("/start", func(w http.ResponseWriter, r *http.Request) {
+        if r.Method == "POST" {
+            reconciler.Events <- types.Start
+            fmt.Fprint(w, "Planner started\n")
+        }
     })
 
-    http.HandleFunc("/stop", func(w http.ResponseWriter, r *http.Request){
-    	if r.Method == "POST" {
-    		reconciler.Events <- types.Stop
-    		fmt.Fprint(w, "Planner stopped\n")
-    	}
+    http.HandleFunc("/stop", func(w http.ResponseWriter, r *http.Request) {
+        if r.Method == "POST" {
+            reconciler.Events <- types.Stop
+            fmt.Fprint(w, "Planner stopped\n")
+        }
     })
 
     log.Info("Starting server at port 9999")
@@ -43,4 +44,3 @@ func RunServer(reconciler *PlannerReconciler) {
         log.Fatal(err)
     }
 }
-

@@ -14,28 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package base
+package nodepolicies
 
 import (
-	"testing"
-	
-	"net/http"
-	"io/ioutil"
+    "context"
+
+    algorithm "github.com/miha3009/planner/controllers/rescheduler/algorithm"
+    types "github.com/miha3009/planner/controllers/types"
 )
 
-func TestGood (t *testing.T) {
-	resp, err := http.Get("https://192.168.49.2:8443/api/v1/pods")
-	if err != nil {
-		t.Log(err)
-		return
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return
-	}
-
-	t.Log(string(body))
+type NodePolicy interface {
+    Run(ctx context.Context, algo algorithm.Algorithm, nodes []types.NodeInfo) (updatedNodes []types.NodeInfo, nodesToCreate []types.NodeInfo, nodesToDelete []types.NodeInfo)
 }
-
-

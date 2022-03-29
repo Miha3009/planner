@@ -17,16 +17,16 @@ limitations under the License.
 package podaffinity
 
 import (
-	types "github.com/miha3009/planner/controllers/types"
+    types "github.com/miha3009/planner/controllers/types"
 )
 
 type TopologyPair struct {
-	key string
-	value string
+    key   string
+    value string
 }
 
 type PodAffinity struct {
-	topology map[TopologyPair]int
+    topology map[TopologyPair]int
 }
 
 func (r PodAffinity) Init(node *types.NodeInfo) {
@@ -40,6 +40,5 @@ func (r PodAffinity) RemovePod(node *types.NodeInfo, pod *types.PodInfo) {
 
 // Not supported yet
 func (r PodAffinity) Check(node *types.NodeInfo) bool {
-	return true
+    return true
 }
-

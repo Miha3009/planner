@@ -1,0 +1,68 @@
+/*
+Copyright 2022.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package nodepolicies
+
+import (
+    "context"
+    "math/rand"
+
+    "github.com/miha3009/planner/controllers/helper"
+    algorithm "github.com/miha3009/planner/controllers/rescheduler/algorithm"
+    types "github.com/miha3009/planner/controllers/types"
+)
+
+type ShrinkNodePolicy struct{}
+
+func (a *ShrinkNodePolicy) Run(ctx context.Context, algo algorithm.Algorithm, nodes []types.NodeInfo) ([]types.NodeInfo, []types.NodeInfo, []types.NodeInfo) {
+    if len(nodes) == 0 {
+        return nodes, nil, nil
+    }
+
+    newNodes, ok := algo.Run(ctx, nodes, []types.PodInfo{})
+    if ok {
+        nodes = newNodes
+        nodesToDelete := make([]types.NodeInfo, 0)
+        for {
+            if helper.ContextEnded(ctx) || len(nodes) == 1 {
+                return nodes, nil, nodesToDelete
+            }
+
+            nodeI := choseNodeForDelete(nodes)
+            newNodes = helper.DeepCopyNodes(nodes)
+            newNodes = append(newNodes[:nodeI], newNodes[nodeI+1:]...)
+            newNodes, ok = algo.Run(ctx, newNodes, helper.DeepCopyPods(nodes[nodeI].Pods))
+            if ok {
+                nodesToDelete = append(nodesToDelete, nodes[nodeI])
+                nodes = newNodes
+            } else {
+                return nodes, nil, nodesToDelete
+            }
+        }
+    } else {
+        return grow(ctx, algo, newNodes)
+    }
+}
+
+func choseNodeForDelete(nodes []types.NodeInfo) int {
+    for i := range nodes {
+        if len(nodes[i].Pods) == 0 {
+            return i
+        }
+    }
+
+    return rand.Intn(len(nodes))
+}

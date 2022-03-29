@@ -17,123 +17,124 @@ limitations under the License.
 package executor
 
 import (
-	"context"
-	"time"
-	types "github.com/miha3009/planner/controllers/types"
-	appsv1 "github.com/miha3009/planner/api/v1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clientset "k8s.io/client-go/kubernetes"
-//	driver "github.com/miha3009/planner/controllers/executor/driver"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+    "context"
+    "sort"
+    "time"
 
-	"github.com/prometheus/common/log"
+    appsv1 "github.com/miha3009/planner/api/v1"
+    types "github.com/miha3009/planner/controllers/types"
+    corev1 "k8s.io/api/core/v1"
+    metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+    clientset "k8s.io/client-go/kubernetes"
+
+    "sigs.k8s.io/controller-runtime/pkg/client"
+
+    "github.com/prometheus/common/log"
 )
 
 type NodeDriver interface {
-	AddNode() bool
-	DeleteNode(node *corev1.Node) bool
+    AddNode() bool
+    DeleteNode(node *corev1.Node) bool
 }
 
-func ExecutePlan(ctx context.Context, events chan types.Event, cache *types.PlannerCache, clt client.Client, cltset *clientset.Clientset, planner appsv1.PlannerSpec) {
-	/*dp, _ := cltset.AppsV1().Deployments("default").List(ctx, metav1.ListOptions{})
-	for i := range dp.Items {
-		log.Info(dp.Items[i].Name)
-		err := cltset.AppsV1().Deployments("default").Delete(ctx, dp.Items[i].Name, metav1.DeleteOptions{})
-		if err != nil {
-			log.Info(err)
-		}
-	}*/
-
-	cache.Plan.Movements = []types.Movement{genRandomMove(cache)}
-	for _, move := range cache.Plan.Movements {
-		movePod(ctx, cltset, move)
-	}
-	
-	log.Info("Plan executed")
-	events <- types.ExecutingEnded
+type Executor interface {
+    ExecutePlan(ctx context.Context, events chan types.Event, cache *types.PlannerCache, clt client.Client, cltset *clientset.Clientset, planner appsv1.PlannerSpec)
 }
 
-func movePod (ctx context.Context, cltset *clientset.Clientset, move types.Movement) {
-	newPod := &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: move.Pod.Namespace,
-			Name:      NewNameForPod(move.Pod),
-			//Labels:    move.Pod.Labels,
-		},
-		Spec: move.Pod.Spec,
-	}
+type DefaultExecutor struct{}
 
-	err := createPod(ctx, cltset, newPod, move.NewNode)
-	if err != nil {
-		log.Info(err)
-		return
-	}
-	
-	for !isPodRunning(ctx, cltset, newPod) {
-		time.Sleep(time.Second)
-	}
-	
-	/*dp, _ := cltset.AppsV1().Deployments("default").List(ctx, metav1.ListOptions{})
-	for i := range dp.Items {
-		dp.Items[i] = 
-		_, err := cltset.AppsV1().Deployments("default").Update(ctx, &dp.Items[i], metav1.UpdateOptions{})
-		if err != nil {
-			log.Info(err)
-		}
-	}*/
-			
-	deletePod(ctx, cltset, move.Pod)
-	
-	newPod.Labels = move.Pod.Labels
-	_, err = cltset.CoreV1().Pods("default").Update(ctx, newPod, metav1.UpdateOptions{})
-	if err != nil {
-		log.Info(err)
-	}
+func (exe *DefaultExecutor) ExecutePlan(ctx context.Context, events chan types.Event, cache *types.PlannerCache, clt client.Client, cltset *clientset.Clientset, planner appsv1.PlannerSpec) {
+    plan := cache.Plan
+    movements := unite(cache.Nodes, plan.Movements, cache.UpdatedPods)
+    movements = prioritizeMovements(movements)
+
+    for _, move := range movements {
+        movePod(ctx, cltset, move)
+    }
+
+    events <- types.ExecutingEnded
+}
+
+func movePod(ctx context.Context, cltset *clientset.Clientset, move types.Movement) bool {
+    newPod := &corev1.Pod{
+        ObjectMeta: metav1.ObjectMeta{
+            Namespace: move.Pod.Namespace,
+            Name:      NewNameForPod(move.Pod),
+        },
+        Spec: move.Pod.Spec,
+    }
+
+    err := createPod(ctx, cltset, newPod, move.NewNode)
+    if err != nil {
+        log.Info(err)
+        return false
+    }
+
+    for !isPodRunning(ctx, cltset, newPod) {
+        time.Sleep(time.Second)
+    }
+
+    deletePod(ctx, cltset, move.Pod)
+
+    newPod.Labels = move.Pod.Labels
+    _, err = cltset.CoreV1().Pods("default").Update(ctx, newPod, metav1.UpdateOptions{})
+    if err != nil {
+        log.Info(err)
+    }
+
+    return true
 }
 
 func isPodRunning(ctx context.Context, cltset *clientset.Clientset, pod *corev1.Pod) bool {
-	pod, err := cltset.CoreV1().Pods(pod.Namespace).Get(ctx, pod.Name, metav1.GetOptions{})
-	if err != nil {
-		log.Info(err)
-	}
-	return pod.Status.Phase == corev1.PodRunning
+    pod, err := cltset.CoreV1().Pods(pod.Namespace).Get(ctx, pod.Name, metav1.GetOptions{})
+    if err != nil {
+        log.Info(err)
+    }
+    return pod.Status.Phase == corev1.PodRunning
 }
 
 func deletePod(ctx context.Context, cltset *clientset.Clientset, pod *corev1.Pod) {
-	err := cltset.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
-	if err != nil {
-		log.Info(err)
-	}
+    err := cltset.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
+    if err != nil {
+        log.Info(err)
+    }
 }
 
 func createPod(ctx context.Context, cltset *clientset.Clientset, pod *corev1.Pod, node *corev1.Node) error {
-	pod.Spec.NodeName = node.Name
-	_, err := cltset.CoreV1().Pods(pod.Namespace).Create(ctx, pod, metav1.CreateOptions{})
-	return err
+    pod.Spec.NodeName = node.Name
+    _, err := cltset.CoreV1().Pods(pod.Namespace).Create(ctx, pod, metav1.CreateOptions{})
+    return err
 }
 
-func genRandomMove(cache *types.PlannerCache) types.Movement {
-	pod := &corev1.Pod{}
-	oldNode := &corev1.Node{}
-	newNode := &corev1.Node{}
-	for i := range cache.Pods {
-		for j := range cache.Pods[i] {
-			pod = &cache.Pods[i][j]
-			oldNode = &cache.Nodes[i]
-		}
-	}
-	
-	if oldNode.Name == cache.Nodes[0].Name {
-		newNode = &cache.Nodes[1]
-	} else {
-		newNode = &cache.Nodes[0]
-	}
+func unite(nodes []corev1.Node, moves []types.Movement, updatedPods []corev1.Pod) []types.Movement {
+    nodeByName := make(map[string]int)
+    for i := range nodes {
+        nodeByName[nodes[i].Name] = i
+    }
 
-	move := types.Movement{Pod: pod, OldNode: oldNode, NewNode: newNode,}
+    moveByPodName := make(map[string]int)
+    for i := range moves {
+        moveByPodName[moves[i].Pod.Name] = i
+    }
 
-	log.Info("OldNode: ", oldNode.Name, ", NewNode: ", newNode.Name)
-	
-	return move
+    for i := range updatedPods {
+        podName := updatedPods[i].Name
+        if _, ok := moveByPodName[podName]; !ok {
+            nodeName := updatedPods[i].Spec.NodeName
+            moves = append(moves, types.Movement{
+                Pod:     &updatedPods[i],
+                OldNode: &nodes[nodeByName[nodeName]],
+                NewNode: &nodes[nodeByName[nodeName]],
+            })
+        }
+    }
+
+    return moves
 }
 
+func prioritizeMovements(moves []types.Movement) []types.Movement {
+    sort.Slice(moves, func(i, j int) bool {
+        return *moves[i].Pod.Spec.Priority > *moves[j].Pod.Spec.Priority
+    })
+    return moves
+}

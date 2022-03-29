@@ -17,59 +17,58 @@ limitations under the License.
 package types
 
 import (
-	"testing"
-	"time"
+    "testing"
+    "time"
 
-	types "github.com/miha3009/planner/controllers/types"
+    types "github.com/miha3009/planner/controllers/types"
 )
 
-func TestSimple (t *testing.T) {
-	queue := types.NewMetricsQueue(time.Second)
-	for i := int64(0); i < 20; i++ {
-		queue.Push(genPackage(i))
-	}
+func TestSimple(t *testing.T) {
+    queue := types.NewMetricsQueue(time.Second)
+    for i := int64(0); i < 20; i++ {
+        queue.Push(genPackage(i))
+    }
 
-	if getIndex(queue.Get(2)) != 2 {
-		t.FailNow()
-	}
-	
-	queue.Pop()
-	
-	if getIndex(queue.Get(2)) != 3 || queue.Size() != 19 {
-		t.FailNow()
-	}
+    if getIndex(queue.Get(2)) != 2 {
+        t.FailNow()
+    }
+
+    queue.Pop()
+
+    if getIndex(queue.Get(2)) != 3 || queue.Size() != 19 {
+        t.FailNow()
+    }
 }
 
-func TestConcurrent (t *testing.T) {
-	queue := types.NewMetricsQueue(time.Second)
-	for i := int64(0); i < 10; i++ {
-		queue.Push(genPackage(i))
-	}
-	queue.Lock()
-	go addToQueue(queue)
-	time.Sleep(time.Second / 10)
-	if queue.Size() != 10 {
-		t.FailNow()
-	}
-	queue.Unlock()
-	time.Sleep(time.Second / 10)
-	queue.Push(genPackage(int64(20)))
-	if queue.Size() != 21 {
-		t.FailNow()
-	}
+func TestConcurrent(t *testing.T) {
+    queue := types.NewMetricsQueue(time.Second)
+    for i := int64(0); i < 10; i++ {
+        queue.Push(genPackage(i))
+    }
+    queue.Lock()
+    go addToQueue(queue)
+    time.Sleep(time.Second / 10)
+    if queue.Size() != 10 {
+        t.FailNow()
+    }
+    queue.Unlock()
+    time.Sleep(time.Second / 10)
+    queue.Push(genPackage(int64(20)))
+    if queue.Size() != 21 {
+        t.FailNow()
+    }
 }
 
 func addToQueue(queue types.MetricsQueue) {
-	for i := int64(10); i < 20; i++ {
-		queue.Push(genPackage(i))
-	}
+    for i := int64(10); i < 20; i++ {
+        queue.Push(genPackage(i))
+    }
 }
 
 func genPackage(x int64) types.MetricsPackage {
-	return types.MetricsPackage{Timestamp: time.UnixMilli(x)}
+    return types.MetricsPackage{Timestamp: time.UnixMilli(x)}
 }
 
 func getIndex(p types.MetricsPackage) int64 {
-	return p.Timestamp.UnixMilli()
+    return p.Timestamp.UnixMilli()
 }
-

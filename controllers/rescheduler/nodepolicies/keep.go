@@ -14,18 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package rescheduler
+package nodepolicies
 
 import (
-	"testing"
-	
-	rescheduler "github.com/miha3009/planner/controllers/rescheduler"
-	types "github.com/miha3009/planner/controllers/types"
+    "context"
+
+    algorithm "github.com/miha3009/planner/controllers/rescheduler/algorithm"
+    types "github.com/miha3009/planner/controllers/types"
 )
 
-func TestExample(t *testing.T) {
-	node := types.NodeInfo {
-		"x", 5, 0, 0, 0, 
-		[]types.PodInfo {{"x", 4, 0}},
-	}
+type KeepNodePolicy struct{}
+
+func (a *KeepNodePolicy) Run(ctx context.Context, algo algorithm.Algorithm, nodes []types.NodeInfo) ([]types.NodeInfo, []types.NodeInfo, []types.NodeInfo) {
+    if len(nodes) == 0 {
+        return nodes, nil, nil
+    }
+
+    newNodes, _ := algo.Run(ctx, nodes, []types.PodInfo{})
+
+    return newNodes, []types.NodeInfo{}, []types.NodeInfo{}
 }
