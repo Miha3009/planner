@@ -25,7 +25,9 @@ import (
     types "github.com/miha3009/planner/controllers/types"
 )
 
-type ShrinkNodePolicy struct{}
+type ShrinkNodePolicy struct{
+    Optimizer *algorithm.Optimizer
+}
 
 func (a *ShrinkNodePolicy) Run(ctx context.Context, algo algorithm.Algorithm, nodes []types.NodeInfo) ([]types.NodeInfo, []types.NodeInfo, []types.NodeInfo) {
     if len(nodes) == 0 {
@@ -35,21 +37,31 @@ func (a *ShrinkNodePolicy) Run(ctx context.Context, algo algorithm.Algorithm, no
     newNodes, ok := algo.Run(ctx, nodes, []types.PodInfo{})
     if ok {
         nodes = newNodes
-        nodesToDelete := make([]types.NodeInfo, 0)
-        for {
-            if helper.ContextEnded(ctx) || len(nodes) == 1 {
-                return nodes, nil, nodesToDelete
-            }
-
-            nodeI := choseNodeForDelete(nodes)
-            newNodes = helper.DeepCopyNodes(nodes)
-            newNodes = append(newNodes[:nodeI], newNodes[nodeI+1:]...)
-            newNodes, ok = algo.Run(ctx, newNodes, helper.DeepCopyPods(nodes[nodeI].Pods))
-            if ok {
-                nodesToDelete = append(nodesToDelete, nodes[nodeI])
-                nodes = newNodes
+        if a.Optimizer != nil {
+            newNodes = a.Optimizer.Optimize(ctx, nodes)
+            if len(nodes) == len(newNodes) {
+                return nodes, nil, nil
             } else {
-                return nodes, nil, nodesToDelete
+                nodesToDelete := getDiffNodes(nodes, newNodes)
+                return newNodes, nil, nodesToDelete
+            }
+        } else {
+            nodesToDelete := make([]types.NodeInfo, 0)
+            for {
+                if helper.ContextEnded(ctx) || len(nodes) == 1 {
+                    return nodes, nil, nodesToDelete
+                }
+
+                nodeI := choseNodeForDelete(nodes)
+                newNodes = helper.DeepCopyNodes(nodes)
+                newNodes = append(newNodes[:nodeI], newNodes[nodeI+1:]...)
+                newNodes, ok = algo.Run(ctx, newNodes, helper.DeepCopyPods(nodes[nodeI].Pods))
+                if ok {
+                    nodesToDelete = append(nodesToDelete, nodes[nodeI])
+                    nodes = newNodes
+                } else {
+                    return nodes, nil, nodesToDelete
+                }
             }
         }
     } else {
@@ -66,3 +78,19 @@ func choseNodeForDelete(nodes []types.NodeInfo) int {
 
     return rand.Intn(len(nodes))
 }
+
+func getDiffNodes(oldNodes []types.NodeInfo, newNodes []types.NodeInfo) []types.NodeInfo {
+    nodesByName := make(map[string]struct{})
+    for i := range newNodes {
+        nodesByName[newNodes[i].Name] = struct{}{}
+    }
+
+    diffNodes := make([]types.NodeInfo, 0)    
+    for i := range oldNodes {
+        if _, ok := nodesByName[oldNodes[i].Name]; !ok {
+            diffNodes = append(diffNodes, oldNodes[i])
+        }
+    }
+    return diffNodes
+}
+

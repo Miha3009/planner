@@ -31,8 +31,10 @@ func GenCluster(n, m int) ([]ResourceInfo, []ResourceInfo) {
     pods := make([]ResourceInfo, m)
     for i := 0; i < m; i++ {
         pods[i] = ResourceInfo{
-            Cpu:    randomRange(100, 1000),
-            Memory: randomRange(100, 1000),
+            Cpu:    randomRange(2, 6)*100,
+            Memory: randomRange(2, 6)*100,
+            //Cpu:    randomRange(400, 1000),
+            //Memory: randomRange(400, 1000),
         }
     }
 

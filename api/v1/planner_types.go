@@ -84,6 +84,10 @@ type PreferenceArgsList struct {
 
 type AlgorithmArgs struct {
     Attemps int `json:"attemps"`
+    StealPodChance int `json:"steal_pod_chance,omitempty"`
+    UseOptimizer bool `json:"use_optimizer,omitempty"`
+    OptimizerTimeLimitPerCycle int `json:"optimizer_time_limit_per_cycle,omitempty"`
+    OptimizerMaxNodesPerCycle int `json:"optimizer_max_nodes_per_cycle,omitempty"`
 }
 
 // PlannerSpec defines the desired state of Planner
@@ -105,7 +109,7 @@ type PlannerSpec struct {
 type PlannerPhase int
 
 const (
-    Ready             PlannerPhase = 0
+    Waiting           PlannerPhase = 0
     Informing                      = 1
     ResourcesUpdating              = 2
     Planning                       = 3

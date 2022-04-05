@@ -36,6 +36,21 @@ spec:
           spec:
             description: PlannerSpec defines the desired state of Planner
             properties:
+              algorithm:
+                properties:
+                  attemps:
+                    type: integer
+                  optimizer_max_nodes_per_cycle:
+                    type: integer
+                  optimizer_time_limit_per_cycle:
+                    type: integer
+                  steal_pod_chance:
+                    type: integer
+                  use_optimizer:
+                    type: boolean
+                required:
+                - attemps
+                type: object
               constraints:
                 properties:
                   pods_count:
@@ -80,6 +95,8 @@ spec:
                 items:
                   type: string
                 type: array
+              node_policy:
+                type: string
               planning_interval:
                 minimum: 1
                 type: integer
@@ -142,8 +159,6 @@ spec:
                 type: boolean
               phase:
                 type: integer
-            required:
-            - active
             type: object
         type: object
     served: true

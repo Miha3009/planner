@@ -27,13 +27,14 @@ import (
 )
 
 type RandomAlgorithm struct {
-    Attempts    int
-    Constraints constraints.ConstraintList
-    Preferences preferences.PreferenceList
+    Attempts       int
+    StealPodChance float64
+    Constraints    constraints.ConstraintList
+    Preferences    preferences.PreferenceList
 }
 
 func (a *RandomAlgorithm) Run(ctx context.Context, oldNodes []types.NodeInfo, freePods []types.PodInfo) ([]types.NodeInfo, bool) {
-    if helper.ContextEnded(ctx) || len(oldNodes) == 0 {
+    if helper.ContextEnded(ctx) || len(oldNodes) <= 1 {
         return oldNodes, true
     }
 
@@ -46,10 +47,11 @@ func (a *RandomAlgorithm) Run(ctx context.Context, oldNodes []types.NodeInfo, fr
         if helper.ContextEnded(ctx) {
             break
         }
-        if len(nodes) > 1 {
-            a.TryToAddRandomPod(&nodes[rand.Intn(N)], &freePods)
-        }
+        a.TryToAddRandomPod(&nodes[rand.Intn(N)], &freePods)
         a.TryToReschedule(nodes, &freePods)
+        if j < a.Attempts * 3 / 4 && len(freePods) < 5 && rand.Float64() <= a.StealPodChance {
+            a.TryToStealRandomPod(nodes, &freePods)
+        }
     }
 
     return nodes, a.Constraints.CheckForAll(nodes) && len(freePods) == 0
@@ -116,4 +118,16 @@ func (a *RandomAlgorithm) TryToAddPod(node *types.NodeInfo, pod types.PodInfo) b
         return false
     }
     return true
+}
+
+func (a *RandomAlgorithm) TryToStealRandomPod(nodes []types.NodeInfo, pods *[]types.PodInfo) {
+    node := &nodes[rand.Intn(len(nodes))]
+    if len(node.Pods) == 0 {
+        return
+    }
+    
+    podNum := rand.Intn(len(node.Pods))
+    pod := node.Pods[podNum]
+    a.RemovePod(node, &pod)
+    *pods = append(*pods, pod)
 }

@@ -210,10 +210,10 @@ func genNodesFromInfo(nodes []types.NodeInfo) []corev1.Node {
 func getAlgorithm(planner *appsv1.PlannerSpec, cl constraints.ConstraintList, pl preferences.PreferenceList) algorithm.Algorithm {
     args := planner.Algorithm
     if args == nil {
-        args = &appsv1.AlgorithmArgs{Attemps: 1000}
+        args = &appsv1.AlgorithmArgs{Attemps: 1000, StealPodChance: 10}
     }
 
-    return &algorithm.ImprovedAlgorithm{Attempts: args.Attemps, Constraints: cl, Preferences: pl}
+    return &algorithm.RandomAlgorithm{Attempts: args.Attemps, StealPodChance: float64(args.StealPodChance) / 1000, Constraints: cl, Preferences: pl}
 }
 
 func getNodePolicy(planner *appsv1.PlannerSpec) nodepolicies.NodePolicy {
@@ -221,7 +221,13 @@ func getNodePolicy(planner *appsv1.PlannerSpec) nodepolicies.NodePolicy {
     case "keep":
         return &nodepolicies.KeepNodePolicy{}
     case "shrink":
-        return &nodepolicies.ShrinkNodePolicy{}
+        var optimizer *algorithm.Optimizer
+        if planner.Algorithm != nil && planner.Algorithm.UseOptimizer {
+            optimizer = algorithm.NewOptimizer(planner.Algorithm.OptimizerTimeLimitPerCycle, planner.Algorithm.OptimizerMaxNodesPerCycle)
+        } else {
+            optimizer = nil
+        }
+        return &nodepolicies.ShrinkNodePolicy{Optimizer: optimizer}
     case "only_grow":
         return &nodepolicies.OnlyGrowNodePolicy{}
     default:

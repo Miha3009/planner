@@ -52,7 +52,7 @@ func init() {
 }
 
 func main() {
-    log.Info("Creating the Manager.")
+    log.Info("Creating the Manager")
     config := ctrl.GetConfigOrDie()
     mgr, err := ctrl.NewManager(config, ctrl.Options{
         Scheme: scheme,
@@ -74,7 +74,7 @@ func main() {
         os.Exit(1)
     }
 
-    log.Info("Starting the Controller.")
+    log.Info("Starting the Controller")
     events := make(chan types.Event, 10)
     events <- types.Start
     reconciler := &controllers.PlannerReconciler{

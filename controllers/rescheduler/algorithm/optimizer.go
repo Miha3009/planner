@@ -17,64 +17,221 @@ limitations under the License.
 package algorithm
 
 import (
-    "fmt"
-    "log"
-
-    "github.com/lukpank/go-glpk/glpk"
+    "context"
+    "math"
+    "math/rand"
+    "sort"
+    //"time" // for testing
+    //"strconv" // for testing
+    
+    "github.com/prometheus/common/log"
+    
+    "github.com/miha3009/planner/controllers/rescheduler/algorithm/glpk"
+    types "github.com/miha3009/planner/controllers/types"
+    helper "github.com/miha3009/planner/controllers/helper"
 )
 
-func TEST_RUN() {
-    lp := glpk.New()
-    lp.SetProbName("sample")
-    lp.SetObjName("Z")
-    lp.SetObjDir(glpk.MAX)
+type Optimizer struct {
+    TimeLimit int
+    MaxNodesPerCycle int
+    MaxFailAttemps int
+    
+    nodes []types.NodeInfo 
+    pods []types.PodInfo
+    lp *glpk.Prob
+    ind []int32
+    rowCount int
+}
 
-    lp.AddRows(3)
-    lp.SetRowName(1, "c1")
-    lp.SetRowBnds(1, glpk.UP, 0.0, 20.0)
-    lp.SetRowName(2, "c2")
-    lp.SetRowBnds(2, glpk.UP, 0.0, 30.0)
-    lp.SetRowName(3, "c3")
-    lp.SetRowBnds(3, glpk.FX, 0.0, 0)
+func NewOptimizer(timeLimit, maxNodesPerCycle int) *Optimizer {
+    return &Optimizer{TimeLimit: timeLimit, MaxNodesPerCycle: maxNodesPerCycle, MaxFailAttemps: 3}
+}
 
-    lp.AddCols(4)
-    lp.SetColName(1, "x1")
-    lp.SetColBnds(1, glpk.DB, 0.0, 40.0)
-    lp.SetObjCoef(1, 1.0)
-    lp.SetColName(2, "x2")
-    lp.SetColBnds(2, glpk.LO, 0.0, 0.0)
-    lp.SetObjCoef(2, 2.0)
-    lp.SetColName(3, "x3")
-    lp.SetColBnds(3, glpk.LO, 0.0, 0.0)
-    lp.SetObjCoef(3, 3.0)
-    lp.SetColName(4, "x4")
-    lp.SetColBnds(4, glpk.DB, 2.0, 3.0)
-    lp.SetObjCoef(4, 1.0)
-    lp.SetColKind(4, glpk.IV)
+func (o *Optimizer) Optimize(ctx context.Context, oldNodes []types.NodeInfo) []types.NodeInfo {
+    nodes := helper.DeepCopyNodes(oldNodes)
+    failAttemps := 0
 
-    fmt.Printf("col1: %v\n", lp.ColKind(1) == glpk.CV)
+    //times := make([]int64, 0) // for testing
+    for {
+        if len(nodes) <= 1 || helper.ContextEnded(ctx) {
+            break
+        }
+    
+    	sort.Slice(nodes, func(i, j int) bool { return o.freeSpace(&nodes[i]) < o.freeSpace(&nodes[j]) })
+        nodeI := o.findFirstNonEmptyNode(nodes)
+        if nodeI == -1 {
+            break
+        }
+        nodes = nodes[:nodeI+1]
 
-    ind := []int32{0, 1, 2, 3, 4}
-    mat := [][]float64{
-        {0, -1, 1.0, 1.0, 10},
-        {0, 1.0, -3.0, 1.0, 0.0},
-        {0, 0.0, 1.0, 0.0, -3.5}}
-    for i := 0; i < 3; i++ {
-        lp.SetMatRow(i+1, ind, mat[i])
+        L := nodeI - o.MaxNodesPerCycle
+        R := nodeI
+        if L < 0 {
+            L = 0
+        }
+        podsCount := len(nodes[nodeI].Pods)
+        pod := nodes[nodeI].Pods[rand.Intn(podsCount)]
+        
+        //start := time.Now().UnixMilli() // for testing
+        if o.lpSolve(nodes[L:R], []types.PodInfo{pod}) {
+            nodes[nodeI].RemovePod(pod)
+            failAttemps = 0
+        } else {
+            failAttemps++
+            if failAttemps >= o.MaxFailAttemps {
+                break
+            }
+        }
+        //times = append(times, time.Now().UnixMilli() - start) // for testing
     }
+    
+    //o.addTimes(nodes, times) // for testing
+    
+    return o.sortNodesBack(nodes, oldNodes)
+}
+
+func (o *Optimizer) lpSolve(nodes []types.NodeInfo, pods []types.PodInfo) bool {
+    for i := range nodes {
+    	pods = append(pods, nodes[i].Pods...)
+    }
+
+    o.lp = glpk.New()
+    o.lp.SetObjDir(glpk.MAX)
+    o.nodes = nodes
+    o.pods = pods
+    
+    N := len(nodes)
+    M := len(pods)
+
+    o.lp.AddCols(N*M)
+    for i := 1; i <= N*M; i++ {
+        o.lp.SetObjCoef(i, 1.0)
+        o.lp.SetColKind(i, glpk.BV)
+    }
+
+    o.ind = make([]int32, N*M+1)
+    for i := range o.ind {
+    	o.ind[i] = int32(i)
+    }
+    o.rowCount = 0
+
+    o.addOnePodConstraint()
+    o.addNodeCpuConstraint()
+    o.addNodeMemoryConstraint()
 
     iocp := glpk.NewIocp()
     iocp.SetPresolve(true)
+    iocp.SetMsgLev(glpk.MSG_OFF)
+    iocp.SetTmLim(o.TimeLimit)
 
-    if err := lp.Intopt(iocp); err != nil {
-        log.Fatalf("Mip error: %v", err)
+    if err := o.lp.Intopt(iocp); err != nil {
+        if err != glpk.ETMLIM {
+            log.Warn("Mip error: %v", err)
+        }
+        return false
+    }
+    
+    if o.lp.MipObjVal() < float64(len(pods)) {
+        return false
+    }
+    
+    for i := 0; i < N; i++ {
+        for len(nodes[i].Pods) > 0 {
+            nodes[i].RemovePod(nodes[i].Pods[0])
+        }
+        nodes[i].PodsCpu = 0
+        nodes[i].PodsMemory = 0
+    }
+    
+    for i := 0; i < N*M; i++ {
+    	if o.lp.MipColVal(i+1) > 0.0 {
+	    nodes[i / M].AddPod(pods[i % M])
+    	}
     }
 
-    fmt.Printf("%s = %g", lp.ObjName(), lp.MipObjVal())
-    for i := 0; i < 4; i++ {
-        fmt.Printf("; %s = %g", lp.ColName(i+1), lp.MipColVal(i+1))
-    }
-    fmt.Println()
-
-    lp.Delete()
+    return true
 }
+
+func (o *Optimizer) findFirstNonEmptyNode(nodes []types.NodeInfo) int {
+    for i := len(nodes) - 1; i >= 0; i-- {
+        if len(nodes[i].Pods) != 0 {
+            return i
+        }
+    }
+    return -1
+}
+
+func (o *Optimizer) addOnePodConstraint() {
+    N := len(o.nodes)
+    M := len(o.pods)
+
+    o.lp.AddRows(M)
+    for k := 0; k < M; k++ {
+    	val := make([]float64, N*M+1)
+    	for i := 0; i < N; i++ {
+    	    val[i*M+k+1] = 1.0
+    	}
+    	o.lp.SetRowBnds(o.rowCount + k + 1, glpk.DB, 0.0, 1.0)
+    	o.lp.SetMatRow(o.rowCount + k + 1, o.ind, val)
+    }
+    o.rowCount += M
+}
+
+func (o *Optimizer) addNodeCpuConstraint() {
+    N := len(o.nodes)
+    M := len(o.pods)
+
+    o.lp.AddRows(N)
+    for k := 0; k < N; k++ {
+    	val := make([]float64, N*M+1)
+    	for i := 0; i < M; i++ {
+    	    val[k*M+i+1] = float64(o.pods[i].Cpu)
+    	}
+    	o.lp.SetRowBnds(o.rowCount + k + 1, glpk.DB, 0.0, float64(o.nodes[k].MaxCpu))
+    	o.lp.SetMatRow(o.rowCount + k + 1, o.ind, val)
+    }
+    o.rowCount += N
+}
+
+func (o *Optimizer) addNodeMemoryConstraint() {
+    N := len(o.nodes)
+    M := len(o.pods)
+
+    o.lp.AddRows(N)
+    for k := 0; k < N; k++ {
+    	val := make([]float64, N*M+1)
+    	for i := 0; i < M; i++ {
+    	    val[k*M+i+1] = float64(o.pods[i].Memory)
+    	}
+    	o.lp.SetRowBnds(o.rowCount + k + 1, glpk.DB, 0.0, float64(o.nodes[k].MaxMemory))
+    	o.lp.SetMatRow(o.rowCount + k + 1, o.ind, val)
+    }
+    o.rowCount += N
+}
+
+func (o *Optimizer) freeSpace(node *types.NodeInfo) float64 {
+    return math.Min(
+        float64(node.MaxCpu - node.PodsCpu) / float64(node.MaxCpu),
+        float64(node.MaxMemory - node.PodsMemory) / float64(node.MaxMemory))
+}
+
+func (o *Optimizer) sortNodesBack(nodes []types.NodeInfo, oldNodes []types.NodeInfo) []types.NodeInfo {
+    nodesByName := make(map[string]int)
+    for i := range oldNodes {
+        nodesByName[oldNodes[i].Name] = i
+    }
+    sort.Slice(nodes, func(i, j int) bool { return nodesByName[nodes[i].Name] < nodesByName[nodes[j].Name] })
+    return nodes
+}
+
+/*func (o *Optimizer) addTimes(nodes []types.NodeInfo, times []int64) {
+    timeStrings := make([]string, len(times))
+    for i := range times {
+        timeStrings[i] = strconv.Itoa(int(times[i]))
+    }
+
+    for i := range nodes {
+        nodes[i].UntoleratedPods = timeStrings
+    }
+}*/ // for testing
+

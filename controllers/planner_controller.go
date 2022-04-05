@@ -102,13 +102,13 @@ func (r *PlannerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
         r.Cache.Metrics.SetMaxAge(time.Second * time.Duration(planner.Spec.MetrcisMaxAge))
     }
 
-    if planner.Status.Phase == appsv1.Ready {
+    if planner.Status.Phase == appsv1.Waiting {
         nextStart := r.LastStart.Add(time.Second * time.Duration(planner.Spec.PlanningInterval))
         if nextStart.Before(time.Now()) {
             r.Cache.Clear()
             go r.Informer.GetInfo(r.MainProcess.Context, r.Events, r.Cache, r.Client, planner.Spec)
             r.LastStart = time.Now()
-            planner.Status.Phase = appsv1.Informing
+            r.UpdatePhase(planner, appsv1.Waiting)
             r.Informer.UpdatePlanner(ctx, r.Client, planner)
         }
     }
@@ -135,7 +135,7 @@ func (r *PlannerReconciler) ProcessEvent(ctx context.Context, planner *appsv1.Pl
     case types.Start:
         if !planner.Status.Active || r.MainProcess == nil {
             planner.Status.Active = true
-            planner.Status.Phase = appsv1.Ready
+            r.UpdatePhase(planner, appsv1.Waiting)
             context, cancelFunc := context.WithCancel(ctx)
             r.MainProcess = &Process{
                 Context:    context,
@@ -147,7 +147,7 @@ func (r *PlannerReconciler) ProcessEvent(ctx context.Context, planner *appsv1.Pl
     case types.Stop:
         if planner.Status.Active {
             planner.Status.Active = false
-            planner.Status.Phase = appsv1.Ready
+            r.UpdatePhase(planner, appsv1.Waiting)
             if r.MainProcess != nil {
                 r.MainProcess.CancelFunc()
                 r.MainProcess = nil
@@ -161,23 +161,23 @@ func (r *PlannerReconciler) ProcessEvent(ctx context.Context, planner *appsv1.Pl
         }
     case types.InformingEnded:
         go resourceupdater.UpdatePodResources(r.MainProcess.Context, r.Events, r.Cache, planner.Spec)
-        planner.Status.Phase = appsv1.ResourcesUpdating
+        r.UpdatePhase(planner, appsv1.ResourcesUpdating)
         return true
     case types.ResourceUpdatingEnded:
         go rescheduler.GenPlan(r.MainProcess.Context, r.Events, r.Cache, planner.Spec)
-        planner.Status.Phase = appsv1.Planning
+        r.UpdatePhase(planner, appsv1.Planning)
         return true
     case types.PlanningEnded:
         go r.Executor.ExecutePlan(r.MainProcess.Context, r.Events, r.Cache, r.Client, r.Clientset, planner.Spec)
-        planner.Status.Phase = appsv1.Executing
+        r.UpdatePhase(planner, appsv1.Executing)
         return true
     case types.ExecutingEnded:
-        planner.Status.Phase = appsv1.Ready
+        r.UpdatePhase(planner, appsv1.Waiting)
         return true
     case types.PhaseEndedWithError:
         nextStart := r.LastStart.Add(time.Second * time.Duration(planner.Spec.PlanningInterval))
         log.Info("Error. Planner will restart after ", nextStart)
-        planner.Status.Phase = appsv1.Ready
+        r.UpdatePhase(planner, appsv1.Waiting)
         return true
     }
     return false
@@ -191,3 +191,21 @@ func (r *PlannerReconciler) StartMetricsProcess(ctx context.Context, planner *ap
     }
     go r.Informer.RunMetircsListener(r.MetricsProcess.Context, r.Cache, r.MetricsClient, planner.Spec)
 }
+
+func (r *PlannerReconciler) UpdatePhase(planner *appsv1.Planner, phase appsv1.PlannerPhase) {
+    planner.Status.Phase = phase
+    switch phase {
+        case appsv1.Waiting:
+            r.Cache.Phase = "Waiting"
+        case appsv1.Informing:
+            r.Cache.Phase = "Collecting info"
+        case appsv1.ResourcesUpdating:
+            r.Cache.Phase = "Resource updating"
+        case appsv1.Planning:
+            r.Cache.Phase = "Plan generating"
+        case appsv1.Executing:
+            r.Cache.Phase = "Plan executing"
+    }
+}
+
+

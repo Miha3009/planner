@@ -26,6 +26,7 @@ type PlannerCache struct {
     Metrics     MetricsQueue
     UpdatedPods []corev1.Pod
     Plan        *Plan
+    Phase       string
 }
 
 func NewCache() *PlannerCache {
@@ -35,6 +36,7 @@ func NewCache() *PlannerCache {
         Metrics:     NewMetricsQueue(),
         UpdatedPods: make([]corev1.Pod, 0),
         Plan:        nil,
+        Phase:       "Waiting",
     }
 }
 
