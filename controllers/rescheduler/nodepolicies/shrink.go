@@ -27,6 +27,7 @@ import (
 
 type ShrinkNodePolicy struct{
     Optimizer *algorithm.Optimizer
+    MaxNodes int
 }
 
 func (a *ShrinkNodePolicy) Run(ctx context.Context, algo algorithm.Algorithm, nodes []types.NodeInfo) ([]types.NodeInfo, []types.NodeInfo, []types.NodeInfo) {
@@ -65,7 +66,7 @@ func (a *ShrinkNodePolicy) Run(ctx context.Context, algo algorithm.Algorithm, no
             }
         }
     } else {
-        return grow(ctx, algo, newNodes)
+        return grow(ctx, algo, newNodes, a.MaxNodes)
     }
 }
 

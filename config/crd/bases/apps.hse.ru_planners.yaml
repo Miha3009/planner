@@ -85,6 +85,8 @@ spec:
                         type: integer
                     type: object
                 type: object
+              max_nodes:
+                type: integer
               metrics_fetch_period:
                 minimum: 1
                 type: integer

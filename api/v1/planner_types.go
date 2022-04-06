@@ -101,6 +101,7 @@ type PlannerSpec struct {
     MetrcisMaxAge          int                `json:"metrics_max_age,omitempty"`
     ResourceUpdateStrategy string             `json:"resource_update_strategy,omitempty"`
     NodePolicy             string             `json:"node_policy,omitempty"`
+    MaxNodes               int                `json:"max_nodes,omitempty"`
     Algorithm              *AlgorithmArgs     `json:"algorithm,omitempty"`
     Constraints            ConstraintArgsList `json:"constraints,omitempty"`
     Preferences            PreferenceArgsList `json:"preferences,omitempty"`

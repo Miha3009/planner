@@ -25,7 +25,9 @@ import (
     types "github.com/miha3009/planner/controllers/types"
 )
 
-type OnlyGrowNodePolicy struct{}
+type OnlyGrowNodePolicy struct{
+    MaxNodes int
+}
 
 func (a *OnlyGrowNodePolicy) Run(ctx context.Context, algo algorithm.Algorithm, nodes []types.NodeInfo) ([]types.NodeInfo, []types.NodeInfo, []types.NodeInfo) {
     if len(nodes) == 0 {
@@ -34,16 +36,16 @@ func (a *OnlyGrowNodePolicy) Run(ctx context.Context, algo algorithm.Algorithm, 
 
     newNodes, ok := algo.Run(ctx, nodes, []types.PodInfo{})
     if !ok {
-        return grow(ctx, algo, newNodes)
+        return grow(ctx, algo, newNodes, a.MaxNodes)
     }
 
     return newNodes, nil, nil
 }
 
-func grow(ctx context.Context, algo algorithm.Algorithm, nodes []types.NodeInfo) ([]types.NodeInfo, []types.NodeInfo, []types.NodeInfo) {
+func grow(ctx context.Context, algo algorithm.Algorithm, nodes []types.NodeInfo, maxNodes int) ([]types.NodeInfo, []types.NodeInfo, []types.NodeInfo) {
     nodesToCreate := make([]types.NodeInfo, 0)
     for {
-        if helper.ContextEnded(ctx) {
+        if helper.ContextEnded(ctx) || len(nodes) >= maxNodes {
             return nodes, nodesToCreate, nil
         }
 

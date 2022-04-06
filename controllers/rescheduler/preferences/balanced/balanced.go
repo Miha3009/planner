@@ -47,5 +47,6 @@ func (r Balanced) Apply(nodes []types.NodeInfo) float64 {
 
 func (r Balanced) calcNormalizedVariance(a, b float64) float64 {
     m := (a + b) / 2
-    return ((a-m)*(a-m) + (b-m)*(b-m)) / float64(0.5)
+    maxVariance := float64(0.25)
+    return ((a-m)*(a-m) + (b-m)*(b-m)) / maxVariance
 }

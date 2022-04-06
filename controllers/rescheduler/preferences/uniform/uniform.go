@@ -55,6 +55,6 @@ func calcNormalizedVariance(nums []float64) float64 {
         return float64(0)
     }
 
-    maxVariance := float64(0.5)
+    maxVariance := float64(0.25)
     return helper.Variance(nums) * types.MaxPreferenceScore / maxVariance
 }

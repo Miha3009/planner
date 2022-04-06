@@ -32,11 +32,17 @@ import (
 )
 
 func GenPlan(ctx context.Context, events chan types.Event, cache *types.PlannerCache, planner appsv1.PlannerSpec) {
-    cst := planner.Constraints
-    prf := planner.Preferences
-
     rawNodes := cache.Nodes
     rawPods := cache.Pods
+    
+    if len(rawNodes) == 1 {
+        cache.Plan = &types.Plan{}
+        events <- types.PlanningEnded
+        return
+    }
+
+    cst := planner.Constraints
+    prf := planner.Preferences
 
     nodes := convertNodes(rawNodes, rawPods)
 
@@ -217,6 +223,11 @@ func getAlgorithm(planner *appsv1.PlannerSpec, cl constraints.ConstraintList, pl
 }
 
 func getNodePolicy(planner *appsv1.PlannerSpec) nodepolicies.NodePolicy {
+    maxNodes := planner.MaxNodes
+    if maxNodes == 0 {
+        maxNodes = 10000
+    }
+    
     switch planner.NodePolicy {
     case "keep":
         return &nodepolicies.KeepNodePolicy{}
@@ -227,9 +238,9 @@ func getNodePolicy(planner *appsv1.PlannerSpec) nodepolicies.NodePolicy {
         } else {
             optimizer = nil
         }
-        return &nodepolicies.ShrinkNodePolicy{Optimizer: optimizer}
+        return &nodepolicies.ShrinkNodePolicy{Optimizer: optimizer, MaxNodes: maxNodes,}
     case "only_grow":
-        return &nodepolicies.OnlyGrowNodePolicy{}
+        return &nodepolicies.OnlyGrowNodePolicy{MaxNodes: maxNodes,}
     default:
         return &nodepolicies.KeepNodePolicy{}
     }
