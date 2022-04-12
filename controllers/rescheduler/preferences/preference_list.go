@@ -19,9 +19,9 @@ package preferences
 import (
     appsv1 "github.com/miha3009/planner/api/v1"
     balanced "github.com/miha3009/planner/controllers/rescheduler/preferences/balanced"
-    maximizeinequality "github.com/miha3009/planner/controllers/rescheduler/preferences/maximizeinequality"
+    economy "github.com/miha3009/planner/controllers/rescheduler/preferences/economy"
+    perfomance "github.com/miha3009/planner/controllers/rescheduler/preferences/perfomance"
     topologyspread "github.com/miha3009/planner/controllers/rescheduler/preferences/topologyspread"
-    uniform "github.com/miha3009/planner/controllers/rescheduler/preferences/uniform"
     types "github.com/miha3009/planner/controllers/types"
 )
 
@@ -34,14 +34,14 @@ func ConvertArgs(prf *appsv1.PreferenceArgsList) PreferenceList {
     items := make([]Preference, 0)
     weights := make([]float64, 0)
 
-    if prf.Uniform != nil {
-        items = append(items, uniform.Uniform{})
-        weights = append(weights, float64(prf.Uniform.Weight))
+    if prf.Economy != nil {
+        items = append(items, economy.Economy{})
+        weights = append(weights, float64(prf.Economy.Weight))
     }
 
-    if prf.MaximizeInequality != nil {
-        items = append(items, maximizeinequality.MaximizeInequality{})
-        weights = append(weights, float64(prf.MaximizeInequality.Weight))
+    if prf.Perfomance != nil {
+        items = append(items, perfomance.Perfomance{})
+        weights = append(weights, float64(prf.Perfomance.Weight))
     }
 
     if prf.Balanced != nil {

@@ -5,7 +5,8 @@ metadata:
 spec:
   planning_interval: 30
   namespaces: ["default"]
-  resource_update_strategy: "none"
   preferences:
-    uniform:
+    perfomance:
       weight: 1
+  constraints:
+    pods_count: 2

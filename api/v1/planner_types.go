@@ -23,24 +23,24 @@ import (
 type ResourceRangeArgs struct {
     // +kubebuilder:validation:Minimum=0
     // +kubebuilder:validation:Maximum=100
-    MinCpu int64 `json:"minCpu,omitempty"`
+    MinCpu int64 `json:"min_cpu,omitempty"`
 
     // +kubebuilder:validation:Minimum=0
     // +kubebuilder:validation:Maximum=100
-    MaxCpu int64 `json:"maxCpu,omitempty"`
+    MaxCpu int64 `json:"max_cpu,omitempty"`
 
     // +kubebuilder:validation:Minimum=0
     // +kubebuilder:validation:Maximum=100
-    MinMemory int64 `json:"minMemory,omitempty"`
+    MinMemory int64 `json:"min_memory,omitempty"`
 
     // +kubebuilder:validation:Minimum=0
     // +kubebuilder:validation:Maximum=100
-    MaxMemory int64 `json:"maxMemory,omitempty"`
+    MaxMemory int64 `json:"max_memory,omitempty"`
 }
 
 type PodsCountArgs struct {
     // +kubebuilder:validation:Minimum=1
-    MaxCount int `json:"maxCount"`
+    MaxCount int `json:"max_count"`
 }
 
 type ConstraintArgsList struct {
@@ -48,12 +48,12 @@ type ConstraintArgsList struct {
     PodsCount     *PodsCountArgs     `json:"pods_count,omitempty"`
 }
 
-type UniformArgs struct {
+type EconomyArgs struct {
     // +kubebuilder:validation:Minimum=1
     Weight int `json:"weight"`
 }
 
-type MaximizeInequalityArgs struct {
+type PerfomanceArgs struct {
     // +kubebuilder:validation:Minimum=1
     Weight int `json:"weight"`
 }
@@ -76,14 +76,16 @@ type TopologySpreadArgs struct {
 }
 
 type PreferenceArgsList struct {
-    Uniform            *UniformArgs            `json:"uniform,omitempty"`
-    MaximizeInequality *MaximizeInequalityArgs `json:"maximize_inequality,omitempty"`
+    Economy            *EconomyArgs            `json:"economy,omitempty"`
+    Perfomance         *PerfomanceArgs         `json:"perfomance,omitempty"`
     Balanced           *BalancedArgs           `json:"balanced,omitempty"`
     TopologySpread     *TopologySpreadArgs     `json:"topology_spread,omitempty"`
 }
 
 type AlgorithmArgs struct {
+    // +kubebuilder:validation:Minimum=1
     Attemps int `json:"attemps"`
+    // +kubebuilder:validation:Minimum=0
     StealPodChance int `json:"steal_pod_chance,omitempty"`
     UseOptimizer bool `json:"use_optimizer,omitempty"`
     OptimizerTimeLimitPerCycle int `json:"optimizer_time_limit_per_cycle,omitempty"`

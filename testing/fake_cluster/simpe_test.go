@@ -37,10 +37,10 @@ func TestCase3(t *testing.T) {
     runPolicyCase(t, "case3.txt", []int{0, 0, 0})
 }
 
-func TestCase4Uniform(t *testing.T) {
+func TestCase4Economy(t *testing.T) {
     controller := ts.GenControllerForReschedulingFromFile("case4.txt", "keep",
         appsv1.ConstraintArgsList{},
-        appsv1.PreferenceArgsList{Uniform: &appsv1.UniformArgs{Weight: 1}})
+        appsv1.PreferenceArgsList{Economy: &appsv1.EconomyArgs{Weight: 1}})
     ts.Run(controller)
     d := ts.GetPodDistribution(controller.Cache)
     if !matchStrings(d, [][]string{{"0", "3"}, {"1", "2"}}) {
@@ -48,10 +48,10 @@ func TestCase4Uniform(t *testing.T) {
     }
 }
 
-func TestCase4MaximizeInequallity(t *testing.T) {
+func TestCase4Perfomance(t *testing.T) {
     controller := ts.GenControllerForReschedulingFromFile("case4.txt", "shrink",
         appsv1.ConstraintArgsList{},
-        appsv1.PreferenceArgsList{MaximizeInequality: &appsv1.MaximizeInequalityArgs{Weight: 1}})
+        appsv1.PreferenceArgsList{Perfomance: &appsv1.PerfomanceArgs{Weight: 1}})
     ts.Run(controller)
     d := ts.GetPodDistribution(controller.Cache)
     if !matchStrings(d, [][]string{{"0", "1", "2", "3"}}) {
@@ -62,7 +62,7 @@ func TestCase4MaximizeInequallity(t *testing.T) {
 func TestCase5(t *testing.T) {
     controller := ts.GenControllerForReschedulingFromFile("case5.txt", "keep",
         appsv1.ConstraintArgsList{},
-        appsv1.PreferenceArgsList{Balanced: &appsv1.BalancedArgs{Weight: 100}, Uniform: &appsv1.UniformArgs{Weight: 1}})
+        appsv1.PreferenceArgsList{Balanced: &appsv1.BalancedArgs{Weight: 100}, Economy: &appsv1.EconomyArgs{Weight: 1}})
     ts.Run(controller)
     d := ts.GetPodDistribution(controller.Cache)
     t.Log(d)
@@ -76,7 +76,7 @@ func runPolicyCase(t *testing.T, fileName string, expectedNodeChange []int) {
     for i := range policies {
         controller := ts.GenControllerForReschedulingFromFile(fileName, policies[i],
             appsv1.ConstraintArgsList{},
-            appsv1.PreferenceArgsList{Uniform: &appsv1.UniformArgs{Weight: 1}})
+            appsv1.PreferenceArgsList{Economy: &appsv1.EconomyArgs{Weight: 1}})
         ts.Run(controller)
         plan := controller.Cache.Plan
         nodeChange := len(plan.NodesToCreate) - len(plan.NodesToDelete)

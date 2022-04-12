@@ -216,7 +216,7 @@ func genNodesFromInfo(nodes []types.NodeInfo) []corev1.Node {
 func getAlgorithm(planner *appsv1.PlannerSpec, cl constraints.ConstraintList, pl preferences.PreferenceList) algorithm.Algorithm {
     args := planner.Algorithm
     if args == nil {
-        args = &appsv1.AlgorithmArgs{Attemps: 1000, StealPodChance: 10}
+        args = &appsv1.AlgorithmArgs{Attemps: 100000, StealPodChance: 10}
     }
 
     return &algorithm.RandomAlgorithm{Attempts: args.Attemps, StealPodChance: float64(args.StealPodChance) / 1000, Constraints: cl, Preferences: pl}

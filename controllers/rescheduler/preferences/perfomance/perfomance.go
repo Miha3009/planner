@@ -14,25 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package uniform
+package perfomance
 
 import (
     helper "github.com/miha3009/planner/controllers/helper"
     types "github.com/miha3009/planner/controllers/types"
 )
 
-type Uniform struct{}
+type Perfomance struct{}
 
-func (r Uniform) Init(node *types.NodeInfo) {
+func (r Perfomance) Init(node *types.NodeInfo) {
 }
 
-func (r Uniform) AddPod(node *types.NodeInfo, pod *types.PodInfo) {
+func (r Perfomance) AddPod(node *types.NodeInfo, pod *types.PodInfo) {
 }
 
-func (r Uniform) RemovePod(node *types.NodeInfo, pod *types.PodInfo) {
+func (r Perfomance) RemovePod(node *types.NodeInfo, pod *types.PodInfo) {
 }
 
-func (r Uniform) Apply(nodes []types.NodeInfo) float64 {
+func (r Perfomance) Apply(nodes []types.NodeInfo) float64 {
     N := len(nodes)
     cpuPercentage := make([]float64, N)
     memoryPercentage := make([]float64, N)
@@ -47,7 +47,7 @@ func (r Uniform) Apply(nodes []types.NodeInfo) float64 {
     cpuVariance := calcNormalizedVariance(cpuPercentage)
     memoryVariance := calcNormalizedVariance(memoryPercentage)
 
-    return types.MaxPreferenceScore - (cpuVariance+memoryVariance)/2
+    return (cpuVariance + memoryVariance) / 2
 }
 
 func calcNormalizedVariance(nums []float64) float64 {

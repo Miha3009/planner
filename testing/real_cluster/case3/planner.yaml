@@ -1,0 +1,10 @@
+apiVersion: apps.hse.ru/v1
+kind: Planner
+metadata:
+  name: planner-sample
+spec:
+  planning_interval: 30
+  namespaces: ["default"]
+  preferences:
+    perfomance:
+      weight: 1

@@ -49,7 +49,7 @@ func UpdatePodResources(ctx context.Context, events chan types.Event, cache *typ
 }
 
 func updatePod(ctx context.Context, pod *corev1.Pod, q types.MetricsQueue, strategy string) (*corev1.Pod, bool) {
-    if strategy == "none" {
+    if strategy == "none" || strategy == "" {
         return nil, false
     }
 

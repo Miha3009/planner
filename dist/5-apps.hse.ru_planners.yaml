@@ -39,12 +39,14 @@ spec:
               algorithm:
                 properties:
                   attemps:
+                    minimum: 1
                     type: integer
                   optimizer_max_nodes_per_cycle:
                     type: integer
                   optimizer_time_limit_per_cycle:
                     type: integer
                   steal_pod_chance:
+                    minimum: 0
                     type: integer
                   use_optimizer:
                     type: boolean
@@ -55,30 +57,30 @@ spec:
                 properties:
                   pods_count:
                     properties:
-                      maxCount:
+                      max_count:
                         minimum: 1
                         type: integer
                     required:
-                    - maxCount
+                    - max_count
                     type: object
                   resource_range:
                     properties:
-                      maxCpu:
+                      max_cpu:
                         format: int64
                         maximum: 100
                         minimum: 0
                         type: integer
-                      maxMemory:
+                      max_memory:
                         format: int64
                         maximum: 100
                         minimum: 0
                         type: integer
-                      minCpu:
+                      min_cpu:
                         format: int64
                         maximum: 100
                         minimum: 0
                         type: integer
-                      minMemory:
+                      min_memory:
                         format: int64
                         maximum: 100
                         minimum: 0
@@ -112,7 +114,15 @@ spec:
                     required:
                     - weight
                     type: object
-                  maximize_inequality:
+                  economy:
+                    properties:
+                      weight:
+                        minimum: 1
+                        type: integer
+                    required:
+                    - weight
+                    type: object
+                  perfomance:
                     properties:
                       weight:
                         minimum: 1
@@ -140,14 +150,6 @@ spec:
                         type: integer
                     required:
                     - keys
-                    - weight
-                    type: object
-                  uniform:
-                    properties:
-                      weight:
-                        minimum: 1
-                        type: integer
-                    required:
                     - weight
                     type: object
                 type: object

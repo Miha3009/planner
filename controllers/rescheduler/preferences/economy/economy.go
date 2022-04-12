@@ -14,25 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package maximizeinequality
+package economy
 
 import (
     helper "github.com/miha3009/planner/controllers/helper"
     types "github.com/miha3009/planner/controllers/types"
 )
 
-type MaximizeInequality struct{}
+type Economy struct{}
 
-func (r MaximizeInequality) Init(node *types.NodeInfo) {
+func (r Economy) Init(node *types.NodeInfo) {
 }
 
-func (r MaximizeInequality) AddPod(node *types.NodeInfo, pod *types.PodInfo) {
+func (r Economy) AddPod(node *types.NodeInfo, pod *types.PodInfo) {
 }
 
-func (r MaximizeInequality) RemovePod(node *types.NodeInfo, pod *types.PodInfo) {
+func (r Economy) RemovePod(node *types.NodeInfo, pod *types.PodInfo) {
 }
 
-func (r MaximizeInequality) Apply(nodes []types.NodeInfo) float64 {
+func (r Economy) Apply(nodes []types.NodeInfo) float64 {
     N := len(nodes)
     cpuPercentage := make([]float64, N)
     memoryPercentage := make([]float64, N)
@@ -47,7 +47,7 @@ func (r MaximizeInequality) Apply(nodes []types.NodeInfo) float64 {
     cpuVariance := calcNormalizedVariance(cpuPercentage)
     memoryVariance := calcNormalizedVariance(memoryPercentage)
 
-    return (cpuVariance + memoryVariance) / 2
+    return types.MaxPreferenceScore - (cpuVariance+memoryVariance)/2
 }
 
 func calcNormalizedVariance(nums []float64) float64 {

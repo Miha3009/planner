@@ -1,0 +1,25 @@
+apiVersion: apps.hse.ru/v1
+kind: Planner
+metadata:
+  name: planner-sample
+spec:
+  planning_interval: 10000
+  namespaces: ["default", "my-namespace"]
+  algorithm:
+    attemps: 100000
+    steal_pod_chance: 20
+    use_oprimizer: true
+    optimizer_time_limit_per_cycle: 20000
+    optimizer_max_nodes_per_cycle: 15
+  constraints:
+    resource_range:
+      min_cpu: 20
+      max_cpu: 90
+      min_memory: 20
+      max_memory: 90
+  preferences:
+    perfomance:
+      weight: 5
+    balanced:
+      weight: 1
+
