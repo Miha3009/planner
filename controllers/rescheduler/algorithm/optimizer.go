@@ -94,15 +94,19 @@ func (o *Optimizer) lpSolve(nodes []types.NodeInfo, pods []types.PodInfo) bool {
     for i := range nodes {
     	pods = append(pods, nodes[i].Pods...)
     }
+    
+    N := len(nodes)
+    M := len(pods)
+
+    if N == 0 || M == 0 {
+        return true
+    }
 
     o.lp = glpk.New()
     o.lp.SetObjDir(glpk.MAX)
     o.nodes = nodes
     o.pods = pods
     
-    N := len(nodes)
-    M := len(pods)
-
     o.lp.AddCols(N*M)
     for i := 1; i <= N*M; i++ {
         o.lp.SetObjCoef(i, 1.0)

@@ -35,10 +35,14 @@ import (
 )
 
 func Run(controller *controllers.PlannerReconciler) {
+    RunWithPeriod(controller, time.Millisecond * 50)
+}
+
+func RunWithPeriod(controller *controllers.PlannerReconciler, d time.Duration) {
     for {
         controller.Reconcile(context.TODO(), reconcile.Request{})
         planner, _ := controller.Informer.GetPlanner(context.TODO(), nil, reconcile.Request{})
-        time.Sleep(time.Millisecond * 50)
+        time.Sleep(d)
         if !planner.Status.Active {
             break
         }
